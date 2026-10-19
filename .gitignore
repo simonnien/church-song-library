@@ -1,0 +1,14 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env*
+.dev.vars*
+*.sqlite*
+*.db
+*.exe
+*.previous*
+*.tsbuildinfo
+.sites-runtime/
+.wrangler/
+desktop/build/

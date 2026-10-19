@@ -1,0 +1,55 @@
+{
+  "groups": {
+    "break": {
+      "name": "break",
+      "default": true,
+      "color": "#FFFFFF"
+    },
+    "bridge": {
+      "name": "bridge",
+      "default": true,
+      "color": "#01FF70"
+    },
+    "chorus": {
+      "name": "chorus",
+      "default": true,
+      "color": "#FF851B"
+    },
+    "intro": {
+      "name": "intro",
+      "default": true,
+      "color": "#620dc9"
+    },
+    "outro": {
+      "name": "outro",
+      "default": true,
+      "color": "#f524bd"
+    },
+    "pre_chorus": {
+      "name": "pre_chorus",
+      "default": true,
+      "color": "#0b57a2"
+    },
+    "tag": {
+      "name": "tag",
+      "default": true,
+      "color": "#FF4136"
+    },
+    "verse": {
+      "name": "主歌1",
+      "color": "#115874"
+    },
+    "1cbe943fd73": {
+      "name": "主歌2",
+      "color": "#4da8cb"
+    },
+    "c372f8c86a5": {
+      "name": "歌名",
+      "color": "#FFDC00"
+    },
+    "a65e34844b3": {
+      "name": "主歌3",
+      "color": "#94f1ff"
+    }
+  }
+}

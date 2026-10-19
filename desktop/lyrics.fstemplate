@@ -1,0 +1,33 @@
+{
+    "template": {
+        "id": "928fa5a5b7c",
+        "name": "歌詞範本",
+        "color": null,
+        "category": "song",
+        "items": [
+            {
+                "type": "text",
+                "style": "padding: 4.8px 9.6px 4.8px 9.6px;left: 15.12px;top: 22.68px;width: 1889.76px;height: 272.12px;",
+                "align": "align-items:center;",
+                "lines": [
+                    {
+                        "align": "text-align: center;;;;;;;;;",
+                        "text": [
+                            {
+                                "value": "歌詞",
+                                "style": "font-size: 96px;font-weight: bold;color: #FFFF00;font-family:'Microsoft New Tai Lue';text-shadow:;-webkit-text-stroke-width:20px;"
+                            }
+                        ]
+                    }
+                ],
+                "scrolling": {
+                    "type": "none"
+                },
+                "list": {
+                    "enabled": false
+                }
+            }
+        ],
+        "modified": 1787978073049
+    }
+}
