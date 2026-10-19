@@ -70,6 +70,29 @@ def font_at(size):
     return ImageFont.truetype(str(Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts/msjhbd.ttc'), size=max(1, int(size)))
 
 
+def compact_short_pages(pages, usable_width, measure):
+    result = [list(page) for page in pages]
+    changed = True
+    while changed:
+        changed = False
+        output = []
+        i = 0
+        while i < len(result):
+            a = result[i]
+            b = result[i+1] if i+1 < len(result) else None
+            if b and len(a) == len(b) == 2 and all(t.strip() and measure(t) < usable_width * .5 for t in a+b):
+                joined = [' '.join(a), ' '.join(b)]
+                if all(measure(t) <= usable_width for t in joined):
+                    output.append(joined)
+                    i += 2
+                    changed = True
+                    continue
+            output.append(a)
+            i += 1
+        result = output
+    return result
+
+
 def layout_pages(title, blocks, options=None):
     options = export_options(options)
     width = WIDTH * (2 if options['aspect_ratio'] == '32:9' else 1)
@@ -78,7 +101,7 @@ def layout_pages(title, blocks, options=None):
         raise ValueError('請先填寫歌名。')
     if not blocks or not any(b['text'].strip() for b in blocks):
         raise ValueError('請先輸入歌詞再匯出。')
-    # Only explicit newlines are page boundaries; spaces are never tokenized.
+    # Wide output joins phrases without changing stored lyrics.
     pages = []
     def append_page(group, lines, block_id, base=BASE_SIZE):
         font = font_at(base)
@@ -101,8 +124,11 @@ def layout_pages(title, blocks, options=None):
         lines = block['text'].replace('\r\n', '\n').split('\n')
         if options['aspect_ratio'] == '32:9' and not block['group'].startswith('歌名'):
             lines = [' '.join(lines[j:j+2]) for j in range(0, len(lines), 2)]
-        for start in range(0, len(lines), capacity):
-            append_page(block['group'], lines[start:start+capacity], i)
+        chunks = [lines[j:j+capacity] for j in range(0, len(lines), capacity)]
+        if options['aspect_ratio'] == '32:9' and not block['group'].startswith('歌名'):
+            chunks = compact_short_pages(chunks, text_width * .96, font_at(BASE_SIZE).getlength)
+        for chunk in chunks:
+            append_page(block['group'], chunk, i)
     if not pages:
         raise ValueError('沒有可匯出的歌詞頁面。')
     for i, page in enumerate(pages):

@@ -7,13 +7,29 @@ import settings from './groups.json';
 export type Page={group:string;block:number;lines:string[];size:number;width:number;height:number;title:string;number:string};
 export const filename=(s:Song)=>`${s.id}-${s.title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[ .]+$/g,'').slice(0,100)||'未命名'}`;
 export function measured(text:string,size:number){const ctx=document.createElement('canvas').getContext('2d')!;ctx.font=`bold ${size}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;return ctx.measureText(text).width;}
+// Only complete, nonblank neighboring pages qualify. Never cross a song block.
+export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number):string[][]{
+ let result=pages.map(p=>[...p]),changed=true;
+ while(changed){changed=false;const next:string[][]=[];
+  for(let i=0;i<result.length;i++){
+   const a=result[i],b=result[i+1];
+   if(b&&a.length===2&&b.length===2&&[...a,...b].every(t=>t.trim()&&measure(t)<usableWidth*.5)){
+    const joined=[a.join(' '),b.join(' ')];
+    if(joined.every(t=>measure(t)<=usableWidth)){next.push(joined);i++;changed=true;continue;}
+   }
+   next.push(a);
+  }
+  result=next;
+ }
+ return result;
+}
 export function pagesFor(song:Song,o:Options):Page[]{
  const width=o.ratio==='32:9'?3840:1920,pages:Page[]=[];
  const add=(group:string,lines:string[],block:number,base=88)=>{const largest=Math.max(1,...lines.map(t=>measured(t,base)));const size=Math.floor(Math.min(base,base*(width-48)*.96/largest)*10)/10;if(size<1)throw Error('有一行過長，請先調整歌詞。');pages.push({group,block,lines,size,width,height:1080,title:'',number:''});};
  if(!song.title.trim())throw Error('請輸入歌名');
  if(!song.blocks.some(b=>b.text.trim()&&!b.type.startsWith('歌名')))throw Error('請先輸入歌詞');
  if(o.showTitle&&!song.blocks[0]?.type.startsWith('歌名'))add('歌名',[song.title],-1,140);
- song.blocks.forEach((b,i)=>{if(!o.showTitle&&b.type.startsWith('歌名'))return;const original=b.text.replace(/\r\n/g,'\n').split('\n');const lines=o.ratio==='32:9'&&!b.type.startsWith('歌名')?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original;for(let j=0;j<lines.length;j+=2)add(label(b),lines.slice(j,j+2),i);});
+ song.blocks.forEach((b,i)=>{if(!o.showTitle&&b.type.startsWith('歌名'))return;const original=b.text.replace(/\r\n/g,'\n').split('\n');const lines=o.ratio==='32:9'&&!b.type.startsWith('歌名')?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original;let chunks:string[][]=[];for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));if(o.ratio==='32:9'&&!b.type.startsWith('歌名'))chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88));chunks.forEach(chunk=>add(label(b),chunk,i));});
  return pages.map((p,i)=>({...p,title:o.showFooterTitle?song.title:'',number:o.showPageNumbers?`${i+1} / ${pages.length}`:''}));
 }
 export function download(name:string,content:Blob|string,type='application/json'){

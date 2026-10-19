@@ -23,3 +23,17 @@ const wide=pagesFor(song,{ratio:'32:9',showTitle:false});
 assert.equal(narrow.length,4);assert.equal(wide.length,3);
 assert.equal(JSON.stringify(wide.map(p=>p.lines)),JSON.stringify([['A B','C D'],['E'],['F G']]));
 console.log('PASS: wide layout pairs lines, preserves odd final lines and section boundaries');
+const {compactShortPages}=moduleAt(path.resolve('lib/exports.ts'));
+const compact=(p,w=100)=>JSON.stringify(compactShortPages(p,w,t=>t.length));
+assert.equal(compact([['A','B'],['C','D']]),JSON.stringify([['A B','C D']]));
+for(const length of [50,51]){const input=[['X'.repeat(length),'B'],['C','D']];assert.equal(compact(input),JSON.stringify(input));}
+const overflow=[['x'.repeat(49),'x'.repeat(49)],['x'.repeat(49),'x'.repeat(49)]];
+assert.equal(compact(overflow,98.5),JSON.stringify(overflow));
+for(const input of [[['A',''],['C','D']],[['A','B'],['C']]])assert.equal(compact(input),JSON.stringify(input));
+assert.equal(compact(Array.from({length:4},(_,i)=>[`${i}a`,`${i}b`])),JSON.stringify([['0a 0b 1a 1b','2a 2b 3a 3b']]));
+const eight={...song,blocks:[{type:'主歌',number:1,text:'A\nB\nC\nD\nE\nF\nG\nH'}]};
+const merged=pagesFor(eight,{ratio:'32:9',showTitle:false,showPageNumbers:true});
+assert.equal(merged.length,1);assert.equal(merged[0].number,'1 / 1');
+assert.equal(JSON.stringify(merged[0].lines),JSON.stringify(['A B C D','E F G H']));
+assert.equal(pagesFor(eight,{ratio:'16:9',showTitle:false}).length,4);
+console.log('PASS: strict 50% threshold, width guard, recursive merge, boundaries and page numbers');
