@@ -5,8 +5,16 @@ export const cookieName='song_editor_session';
 export const validAccount=(name:string)=>/^beersheba(0[1-9]|10)$/.test(name);
 const hex=(bytes:ArrayBuffer)=>Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
 export async function hashToken(token:string){return hex(await crypto.subtle.digest('SHA-256',encoder.encode(token)));}
-export async function verifyPassword(password:string){
- const stored=config().EDITOR_PASSWORD_HASH;if(!stored)return false;
+export async function passwordRecord(username:string){
+ return config().DB.prepare('SELECT password_hash FROM editor_passwords WHERE username=?').bind(username).first<{password_hash:string}>();
+}
+export async function makePasswordHash(password:string){
+ const salt=newToken();
+ const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
+ return salt+':'+hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(salt),iterations:100000,hash:'SHA-256'},key,256));
+}
+export async function verifyPassword(password:string,stored=config().EDITOR_PASSWORD_HASH){
+ if(!stored)return false;
  const [salt,expected]=stored.split(':');if(!salt||!expected)return false;
  const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
  const actual=hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(salt),iterations:100000,hash:'SHA-256'},key,256));

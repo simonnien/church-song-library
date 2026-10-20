@@ -56,3 +56,11 @@ py -m PyInstaller --noconfirm SongEditor.spec
 編輯者帳號為 beersheba01–beersheba10。密碼僅保留伺服器雜湊設定，不在此儲存庫。
 
 本機配對工具現會讀取 FreeShow 設定中的 Shows 路徑，優先依 ID、完整歌名、去除編號後的唯一歌名配對。既有歌曲只建立歌單引用，保留本機版面與影片；缺少的歌曲才從下載 .show 加入。先儲存 FreeShow 的未存修改；同名多筆會停止。產生配對報告並嘗試透過 .project 檔案關聯開啟 FreeShow。驗證：`py web/scripts/check-local-matching.py`（請在 web 目錄執行 `py scripts/check-local-matching.py`）。
+
+## 手機操作與帳號更新
+
+手機歌詞頁提供返回清單、重置未儲存修改；瀏覽器返回也會回到清單，未儲存時先提示。資料夾選單提供「已選歌曲」，依歌單順序顯示。
+
+點登入帳號可修改自己的密碼，需驗證目前密碼；變更後該帳號所有登入狀態失效。未修改的帳號仍使用伺服器初始雜湊；修改後以 D1 `editor_passwords` 個別雜湊為準。不得提供原始密碼查詢，亦沒有授予一般編輯者重設別人密碼的權限。密碼欄提供顯示切換，方便手機使用不同輸入法。
+
+驗證：`node scripts/check-navigation.cjs`；本機預覽啟動並套用遷移後，可執行 `py scripts/check-password-local.py`（僅本機測試，結束還原測試帳號資料）。

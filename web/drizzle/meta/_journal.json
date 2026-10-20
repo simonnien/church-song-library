@@ -15,6 +15,13 @@
       "when": 1792029130093,
       "tag": "0001_swift_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792490199500,
+      "tag": "0002_lovely_sage",
+      "breakpoints": true
     }
   ]
 }

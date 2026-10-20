@@ -1,5 +1,5 @@
 import {config} from '@/lib/store';
-import {cookieName,editor,hashToken,newToken,sameOrigin,validAccount,verifyPassword} from '@/lib/auth';
+import {cookieName,editor,hashToken,newToken,sameOrigin,validAccount,verifyPassword,passwordRecord} from '@/lib/auth';
 import {cookies} from 'next/headers';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -16,7 +16,8 @@ export async function POST(request:Request){
  const limitKey=await hashToken(ip+':'+window);
  const attempts=await db.prepare('INSERT INTO login_attempts(key,count,expires) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count').bind(limitKey,now+1200000).first<{count:number}>();
  if((attempts?.count||0)>30)return reply({error:'登入嘗試太頻繁，請 10 分鐘後再試'},429);
- const ok=await verifyPassword(password);
+ const record=validAccount(username)?await passwordRecord(username):null;
+ const ok=await verifyPassword(password,record?.password_hash);
  if(!validAccount(username)||!ok)return reply({error:'帳號或密碼不正確'},401);
  const token=newToken(),expiry=now+86400000;
  const jar=await cookies(),old=jar.get(cookieName)?.value;
