@@ -54,3 +54,5 @@ py -m PyInstaller --noconfirm SongEditor.spec
 網頁與桌面 .show 都採相同固定歌曲 ID；舊版隨機 ID 副本需要備份後自行整理，無法安全地只憑歌名自動覆蓋。桌面此次更新固定 ID，歌單與 Word 大字報功能在網頁使用。
 
 編輯者帳號為 beersheba01–beersheba10。密碼僅保留伺服器雜湊設定，不在此儲存庫。
+
+本機配對工具現會讀取 FreeShow 設定中的 Shows 路徑，優先依 ID、完整歌名、去除編號後的唯一歌名配對。既有歌曲只建立歌單引用，保留本機版面與影片；缺少的歌曲才從下載 .show 加入。先儲存 FreeShow 的未存修改；同名多筆會停止。產生配對報告並嘗試透過 .project 檔案關聯開啟 FreeShow。驗證：`py web/scripts/check-local-matching.py`（請在 web 目錄執行 `py scripts/check-local-matching.py`）。

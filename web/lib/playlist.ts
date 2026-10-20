@@ -41,6 +41,6 @@ export async function exportLocalMediaPack(songs:Song[],options:Options,info:Wor
  zip.file('start.cmd','@echo off\r\npowershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0match-videos.ps1"\r\npause\r\n');
  zip.file('media-map.json',JSON.stringify(map));
  zip.file('敬拜資訊.txt',worshipText(songs,info));
- zip.file('使用說明.txt','1. 將 ZIP 完整解壓縮到要播放的 Windows 電腦。\r\n2. 執行 start.cmd，選擇影片所在資料夾（會搜尋子資料夾）。\r\n3. 同名多個或找不到會停止；可改選更精確的資料夾後重試。\r\n4. 匯入新產生 matched-... 資料夾內的 .project（整份歌單）或 .show（單首）。不要匯入根目錄尚未配對的檔案。\r\n只建立新檔，不移動或刪除影片、不更改 FreeShow 資料庫。');
- download(planName(info)+'-本機影片配對.zip',await zip.generateAsync({type:'blob'}),'application/zip');
+ zip.file('使用說明.txt','1. 將 ZIP 完整解壓縮到要播放的 Windows 電腦。\r\n2. 執行 start.cmd，工具先讀取 FreeShow 歌曲庫；找不到位置時請選 Shows 資料夾。已有歌曲直接引用，只有缺少的才使用下載 .show。\r\n3. 新增歌曲需要背景時才選影片資料夾。歌曲或影片同名多個會停止，請先整理或選更精確的資料夾。\r\n4. 工具會嘗試開啟 matched-... 中的 .project；若未開啟，請在 FreeShow 匯入它。配對結果.txt 會列出沿用與新增歌曲。不要匯入根目錄尚未配對的檔案。\r\n執行前先儲存 FreeShow 修改。沿用本機歌曲不覆蓋歌詞、版面與影片；只新增歌單缺少的歌曲。不移動或刪除影片。');
+ download(planName(info)+'-本機歌曲影片配對.zip',await zip.generateAsync({type:'blob'}),'application/zip');
 }
