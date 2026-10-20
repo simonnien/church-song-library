@@ -64,3 +64,15 @@ py -m PyInstaller --noconfirm SongEditor.spec
 點登入帳號可修改自己的密碼，需驗證目前密碼；變更後該帳號所有登入狀態失效。未修改的帳號仍使用伺服器初始雜湊；修改後以 D1 `editor_passwords` 個別雜湊為準。不得提供原始密碼查詢，亦沒有授予一般編輯者重設別人密碼的權限。密碼欄提供顯示切換，方便手機使用不同輸入法。
 
 驗證：`node scripts/check-navigation.cjs`；本機預覽啟動並套用遷移後，可執行 `py scripts/check-password-local.py`（僅本機測試，結束還原測試帳號資料）。
+
+## 2026-10-21 操作與影片更新
+
+- 45 個影片版本的縮圖選單、比例篩選、載入動畫與失敗重試。原檔保留，超過上傳限制的版本另製網頁副本。
+- FreeShow 專案同時列出歌曲與獨立影片，背景與影片項目使用同一路徑。匯入後可在 FreeShow 調整媒體速度及濾鏡。
+- 電腦右下角已選歌曲小框、手機底部選單與固定儲存操作。未登入隱藏編輯者篩選。
+- 編輯草稿依帳號、歌曲儲存在本機；可恢復、重置。雲端保留修改前版本與變更者，還原後須按儲存。
+- 已選歌單集中設定版面、檢查空白歌詞／影片連結，匯出 FreeShow、PowerPoint ZIP、大字報與敬拜文字。
+- beersheba01 為指定管理者，須先修改初始密碼才能使用帳號管理。管理操作需再次驗證密碼，可停用／啟用、重設他人臨時密碼；臨時密碼登入後強制更改，不提供明文密碼查詢。
+- 本機配對工具記住影片資料夾與手動指定的對應；同名不同版本可依大小區分。既有 FreeShow 歌曲保留，只加入缺少的歌曲及專案影片項目。
+
+驗證（web 目錄）：TypeScript、check-drafts.cjs、check-navigation.cjs、check-playlist.cjs、check-download.cjs、check-show-layout.cjs、check-local-matching.py；本機啟動並遷移後執行 check-admin-local.py。測試會還原測試帳號並清除測試歌曲。

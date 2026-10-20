@@ -6,6 +6,10 @@ function Read-Json($path){return Get-Content -LiteralPath $path -Raw -Encoding U
 function Song-Title($name){return (($name -replace '^\s*\d+\s*[-_－–—]\s*','').Trim() -replace '\s+',' ').ToLowerInvariant()}
 function Save-Json($path,$value){[IO.File]::WriteAllText($path,(ConvertTo-Json -InputObject $value -Depth 100),[Text.UTF8Encoding]::new($false))}
 try {
+ $preferencesPath=Join-Path $env:LOCALAPPDATA 'ChurchSongLibrary/media-preferences.json'
+ $preferences=[pscustomobject]@{folder='';files=@{}}
+ if(Test-Path -LiteralPath $preferencesPath){try{$preferences=Read-Json $preferencesPath}catch{}}
+ $remembered=@{};if($preferences.files){foreach($prop in $preferences.files.PSObject.Properties){$remembered[$prop.Name]=$prop.Value}}
  # Read only the configured library; never write into FreeShow's own Shows directory.
  if(!$ShowsFolder){foreach($configName in @('settings.json','config.json')){
   $configPath=Join-Path $env:APPDATA ('FreeShow/'+$configName)
@@ -57,17 +61,26 @@ try {
  $needed=@($manifest | Where-Object {$serialized.Contains('"'+$_.placeholder+'"')})
  $mapping=@{}
  if($needed.Count){
-  if(!$VideoFolder){if($NonInteractive){throw 'VideoFolder is required for new songs with backgrounds'};$VideoFolder=Choose-Folder '選擇新增歌曲的背景影片資料夾（含子資料夾）'}
+  if(!$VideoFolder -and $preferences.folder -and (Test-Path -LiteralPath $preferences.folder -PathType Container)){$VideoFolder=$preferences.folder}
+  if(!$VideoFolder -and !$NonInteractive -and (Test-Path -LiteralPath 'D:\FreeShow\video')){$VideoFolder='D:\FreeShow\video'}
+  if(!$VideoFolder){if($NonInteractive){throw 'VideoFolder is required for backgrounds'};$VideoFolder=Choose-Folder '選擇背景影片資料夾（會記住本次位置）'}
   $files=@(Get-ChildItem -LiteralPath $VideoFolder -Recurse -File -ErrorAction SilentlyContinue)
-  foreach($m in $needed){$matches=@($files|Where-Object {$_.Name -ieq $m.filename})
-   if($matches.Count -eq 1){$mapping[$m.placeholder]=$matches[0].FullName}
-   elseif(!$matches.Count){$problems+='找不到影片：'+$m.filename}
-   else{$problems+='同名影片多個，請選更精確的資料夾：'+$m.filename+"`r`n"+($matches.FullName -join "`r`n")}
+  foreach($m in $needed){
+   $key=$m.filename+'|'+$m.bytes
+   if($remembered[$key] -and (Test-Path -LiteralPath $remembered[$key] -PathType Leaf)){$mapping[$m.placeholder]=$remembered[$key];$report+='使用記住的影片：'+$m.filename;continue}
+   $matches=@($files|Where-Object {$_.Name -ieq $m.filename -and (!$m.bytes -or $_.Length -eq $m.bytes)})
+   if($matches.Count -eq 1){$mapping[$m.placeholder]=$matches[0].FullName;$report+='找到影片：'+$m.filename}
+   elseif($NonInteractive){$problems+=('影片缺少或同名多個：'+$m.filename)}
+   else{
+    $picker=New-Object Windows.Forms.OpenFileDialog;$picker.Title='指定影片（缺少或同名多個）：'+$m.filename;$picker.Filter='影片|*.mp4;*.mov;*.mkv;*.webm;*.avi';$picker.InitialDirectory=$VideoFolder
+    if($picker.ShowDialog() -eq 'OK'){$mapping[$m.placeholder]=$picker.FileName;$remembered[$key]=$picker.FileName;$report+='手動指定並記住：'+$m.filename+' → '+$picker.FileName}else{$problems+='未指定影片：'+$m.filename}
+   }
   }
  }
  if($problems.Count){throw ($problems -join "`r`n`r`n")}
  foreach($key in $mapping.Keys){$serialized=$serialized.Replace(('"'+$key+'"'),(ConvertTo-Json -InputObject $mapping[$key] -Compress))}
  $data=$serialized|ConvertFrom-Json
+ if($VideoFolder -and !$NonInteractive){New-Item -ItemType Directory -Force -Path (Split-Path $preferencesPath) | Out-Null;Save-Json $preferencesPath @{folder=$VideoFolder;files=$remembered}}
  $output=Join-Path $PackageFolder ('matched-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
  New-Item -ItemType Directory -Path $output | Out-Null
  $projectPath=Join-Path $output $projectFiles[0].Name

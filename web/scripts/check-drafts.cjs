@@ -1,0 +1,5 @@
+const fs=require('fs'),ts=require('typescript'),vm=require('vm'),assert=require('node:assert/strict');
+const mod={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/drafts.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:mod.exports,module:mod,Date});
+const d=mod.exports,map=new Map(),storage={getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+const song={id:'011',title:'草稿',blocks:[{type:'主歌',text:'未儲存內容',number:'1'}],revision:3};
+d.writeDraft(storage,'beersheba01',song);assert.equal(d.readDraft(storage,'beersheba01','011').song.blocks[0].text,'未儲存內容');assert.equal(d.readDraft(storage,'beersheba02','011'),null);assert.equal(d.readDraft(storage,'beersheba01','012'),null);d.clearDraft(storage,'beersheba01','011');assert.equal(d.readDraft(storage,'beersheba01','011'),null);storage.setItem(d.draftKey('beersheba01','011'),'broken');assert.equal(d.readDraft(storage,'beersheba01','011'),null);console.log('PASS: draft persistence, account/song isolation, explicit reset removal and corrupt storage fallback');

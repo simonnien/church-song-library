@@ -25,5 +25,9 @@ with tempfile.TemporaryDirectory(prefix='song-match-') as tmp:
  assert Path(data['shows']['church_song_library_2']['media']['bg']['path']).is_file()
  assert (lib/'alpha.show').read_bytes()==before
  p=package('all-existing',[('church_song_library_1','001-Alpha')]);data=run(p);assert data['shows']=={}
+ p=package('existing-with-video',[('church_song_library_1','001-Alpha')])
+ fixture=json.loads((p/'plan.project').read_text(encoding='utf-8'));fixture['project']['shows'].append({'type':'video','id':'__VIDEO__','name':'test'});fixture['media']={'__VIDEO__':{'speed':'1'}};write(p/'plan.project',fixture);write(p/'media-map.json',[{'placeholder':'__VIDEO__','filename':'test.mp4','bytes':1}])
+ duplicate_folder=videos/'other-quality';duplicate_folder.mkdir();(duplicate_folder/'test.mp4').write_bytes(b'longer')
+ data=run(p);assert data['shows']=={};assert data['project']['shows'][-1]['id'] in data['media'];assert Path(data['project']['shows'][-1]['id']).read_bytes()==b'x'
  write(lib/'duplicate.show',['another-id',local]);run(package('ambiguous',[('church_song_library_1','001-Alpha')]),False)
  print('PASS: local song reuse, missing-song fallback, local layout preservation, video matching, no overwrite, all-existing and ambiguous-name rejection')

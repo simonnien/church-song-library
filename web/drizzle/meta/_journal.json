@@ -22,6 +22,13 @@
       "when": 1792490199500,
       "tag": "0002_lovely_sage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792503298499,
+      "tag": "0003_vengeful_santa_claus",
+      "breakpoints": true
     }
   ]
 }

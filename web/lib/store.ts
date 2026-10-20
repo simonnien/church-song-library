@@ -19,7 +19,7 @@ export async function listSongs():Promise<Song[]> {
  const merged=new Map<string,Song>((initial as Song[]).map(s=>[s.id,s]));
  for(const row of rows.results) {const s=JSON.parse(row.data) as Song;merged.set(s.id,s);}return [...merged.values()].sort((a,b)=>a.number-b.number);
 }
-export async function saveSong(song:Song):Promise<Song> {
+export async function saveSong(song:Song,actor:string=''):Promise<Song> {
  if(driveReady()){const r=await drive('save',{song});if(!r.song)throw Error('Google Drive 未回傳儲存結果');return r.song;}
  const c=config(), now=new Date().toISOString(),next={...song,revision:song.revision+1};
  const seed=(initial as Song[]).find(s=>s.id===song.id);
@@ -28,8 +28,7 @@ export async function saveSong(song:Song):Promise<Song> {
  if(!current&&song.revision!==0)throw new Conflict();
  const before=current?.data??(seed?JSON.stringify(seed):'');
  const statements=[];
- if(before)statements.push(c.DB.prepare('INSERT INTO song_history(song_id,data,saved_at) SELECT ?,?,? WHERE COALESCE((SELECT revision FROM songs WHERE id=?),0)=?').bind(song.id,before,now,song.id,song.revision));
+ if(before)statements.push(c.DB.prepare('INSERT INTO song_history(song_id,data,saved_at,actor) SELECT ?,?,?,? WHERE COALESCE((SELECT revision FROM songs WHERE id=?),0)=?').bind(song.id,before,now,actor,song.id,song.revision));
  statements.push(c.DB.prepare('INSERT INTO songs(id,data,revision,updated) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,revision=excluded.revision,updated=excluded.updated WHERE songs.revision=?').bind(song.id,JSON.stringify(next),next.revision,now,song.revision));
  const results=await c.DB.batch(statements);if(!results.at(-1)?.meta.changes)throw new Conflict();return next;
 }
-

@@ -7,7 +7,7 @@ export async function POST(request:Request){
  if(!sameOrigin(request))return reply({error:'來源驗證失敗'},403);
  if(!request.headers.get('content-type')?.startsWith('application/json'))return reply({error:'資料格式錯誤'},415);
  try{
-  const username=await editor();if(!username)return reply({error:'請先登入'},401);
+  const username=await editor(true);if(!username)return reply({error:'請先登入'},401);
   const raw=await request.text();if(raw.length>4096)return reply({error:'資料過長'},413);
   const {currentPassword,newPassword}=JSON.parse(raw);
   if(typeof currentPassword!=='string'||currentPassword.length>256||typeof newPassword!=='string'||newPassword.length<8||newPassword.length>256)return reply({error:'新密碼請輸入 8～256 個字元'},400);
@@ -24,7 +24,7 @@ export async function POST(request:Request){
   const update=record
    ?db.prepare('UPDATE editor_passwords SET password_hash=?,updated=? WHERE username=? AND password_hash=?').bind(next,now,username,record.password_hash)
    :db.prepare('INSERT INTO editor_passwords(username,password_hash,updated) VALUES(?,?,?) ON CONFLICT(username) DO NOTHING').bind(username,next,now);
-  const results=await db.batch([update,db.prepare('DELETE FROM editor_sessions WHERE username=? AND EXISTS (SELECT 1 FROM editor_passwords WHERE username=? AND password_hash=?)').bind(username,username,next)]);
+  const results=await db.batch([update,db.prepare('DELETE FROM editor_sessions WHERE username=? AND EXISTS (SELECT 1 FROM editor_passwords WHERE username=? AND password_hash=?)').bind(username,username,next),db.prepare('UPDATE editor_accounts SET must_change=0 WHERE username=? AND EXISTS (SELECT 1 FROM editor_passwords WHERE username=? AND password_hash=?)').bind(username,username,next)]);
   if(!results[0].meta.changes)return reply({error:'密碼已在其他裝置變更，請重新登入'},409);
   (await cookies()).set(cookieName,'',{httpOnly:true,secure:new URL(request.url).protocol==='https:',sameSite:'strict',path:'/',maxAge:0});
   return reply({ok:true});
