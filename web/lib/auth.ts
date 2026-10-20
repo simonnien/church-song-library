@@ -2,7 +2,7 @@ import {cookies} from 'next/headers';
 import {config} from './store';
 const encoder=new TextEncoder();
 export const cookieName='song_editor_session';
-export const validAccount=(name:string)=>/^beershebr(0[1-9]|10)$/.test(name);
+export const validAccount=(name:string)=>/^beersheba(0[1-9]|10)$/.test(name);
 const hex=(bytes:ArrayBuffer)=>Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
 export async function hashToken(token:string){return hex(await crypto.subtle.digest('SHA-256',encoder.encode(token)));}
 export async function verifyPassword(password:string){

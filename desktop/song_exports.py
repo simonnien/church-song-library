@@ -216,7 +216,7 @@ def export_show(path, code, title, blocks, youtube='', options=None):
             'timestamps':{'created':now//1000,'modified':now,'used':None},
             'meta':{'number':str(code),'title':title}, 'slides':slides,
             'layouts':{'default':{'name':'預設','notes':youtube,'slides':layout}}, 'media':{}}
-    Path(path).write_text(json.dumps(['song_library_'+uuid.uuid4().hex,show],ensure_ascii=False),encoding='utf-8')
+    Path(path).write_text(json.dumps(['church_song_library_'+str(int(code)),show],ensure_ascii=False),encoding='utf-8')
     return pages
 
 
