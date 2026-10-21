@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beersheba-songs",
   "main": "cloudflare/worker.ts",
-  "compatibility_date": "2026-10-21",
+  "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "d1_databases": [{
