@@ -1,7 +1,7 @@
 import {env} from 'cloudflare:workers';
 import initial from '@/data/songs.json';
 import {Song} from './model';
-type Bindings={DB:D1Database;OWNER_EMAIL?:string;EDITOR_PASSWORD_HASH?:string;DRIVE_BRIDGE_URL?:string;DRIVE_BRIDGE_TOKEN?:string};
+type Bindings={DB:D1Database;GOOGLE_CLIENT_ID?:string;GOOGLE_CLIENT_SECRET?:string;OWNER_EMAIL?:string;EDITOR_PASSWORD_HASH?:string;DRIVE_BRIDGE_URL?:string;DRIVE_BRIDGE_TOKEN?:string};
 export const config=()=>env as unknown as Bindings;
 export const driveReady=()=>Boolean(config().DRIVE_BRIDGE_URL&&config().DRIVE_BRIDGE_TOKEN);
 async function drive(action:string,data:object={}) {

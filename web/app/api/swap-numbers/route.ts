@@ -1,11 +1,11 @@
-import {editor,passwordRecord,sameOrigin} from '@/lib/auth';
+import {editor,passwordRecord,sameOrigin,isAdmin} from '@/lib/auth';
 import {config,driveReady} from '@/lib/store';
 import type {Song} from '@/lib/model';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export async function POST(request:Request){
  if(!sameOrigin(request))return reply({error:'來源驗證失敗'},403);
- if(await editor()!=='beersheba01'||!await passwordRecord('beersheba01'))return reply({error:'僅已修改初始密碼的管理者可交換編號'},403);
+ if(!await isAdmin())return reply({error:'僅已修改初始密碼的管理者可交換編號'},403);
  if(driveReady())return reply({error:'Drive 模式尚不支援交換編號'},409);
  try{
   const raw=await request.text();if(raw.length>1024)return reply({error:'內容過長'},413);

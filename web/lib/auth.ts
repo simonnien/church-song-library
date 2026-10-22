@@ -1,5 +1,6 @@
 import {cookies} from 'next/headers';
 import {config} from './store';
+import {googleReady,GOOGLE_ADMIN} from './google-auth';
 const encoder=new TextEncoder();
 export const cookieName='song_editor_session';
 export const validAccount=(name:string)=>/^beersheba(0[1-9]|10)$/.test(name);
@@ -26,9 +27,13 @@ export async function accountState(username:string){
 export async function editor(allowPasswordChange=false){
  const token=(await cookies()).get(cookieName)?.value;if(!token||!/^[a-f0-9]{64}$/.test(token))return null;
  const row=await config().DB.prepare('SELECT username FROM editor_sessions WHERE token_hash=? AND expires>?').bind(await hashToken(token),Date.now()).first<{username:string}>();
- if(!row||!validAccount(row.username))return null;
+ if(!row)return null;
+ if(googleReady()){const allowed=await config().DB.prepare('SELECT email FROM google_editors WHERE email=? AND disabled=0 AND subject IS NOT NULL').bind(row.username).first();return allowed?row.username:null;}
+ if(!validAccount(row.username))return null;
  const state=await accountState(row.username);
  return state.disabled||(!allowPasswordChange&&state.must_change)?null:row.username;
 }
 export function sameOrigin(request:Request){return request.headers.get('origin')===new URL(request.url).origin;}
 export function newToken(){return hex(crypto.getRandomValues(new Uint8Array(32)).buffer);}
+
+export async function isAdmin(){const name=await editor();return googleReady()?name===GOOGLE_ADMIN:name==='beersheba01'&&!!await passwordRecord('beersheba01')}

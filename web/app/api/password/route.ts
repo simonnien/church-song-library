@@ -1,9 +1,11 @@
 import {cookies} from 'next/headers';
 import {config} from '@/lib/store';
+import {googleReady} from '@/lib/google-auth';
 import {cookieName,editor,hashToken,makePasswordHash,passwordRecord,sameOrigin,verifyPassword} from '@/lib/auth';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export async function POST(request:Request){
+ if(googleReady())return reply({error:'請在 Google 帳號管理密碼'},403);
  if(!sameOrigin(request))return reply({error:'來源驗證失敗'},403);
  if(!request.headers.get('content-type')?.startsWith('application/json'))return reply({error:'資料格式錯誤'},415);
  try{

@@ -1,10 +1,12 @@
 import {config} from '@/lib/store';
+import {googleReady} from '@/lib/google-auth';
 import {cookieName,editor,hashToken,newToken,sameOrigin,validAccount,verifyPassword,passwordRecord,accountState} from '@/lib/auth';
 import {cookies} from 'next/headers';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
-export async function GET(){const username=await editor(true);return reply({username,mustChange:username?!!(await accountState(username)).must_change:false});}
+export async function GET(){const username=await editor(true);return reply({username,google:googleReady(),mustChange:username?!!(await accountState(username)).must_change:false});}
 export async function POST(request:Request){
+ if(googleReady())return reply({error:'請使用 Google 登入'},403);
  if(!sameOrigin(request))return reply({error:'來源驗證失敗'},403);
  if(!request.headers.get('content-type')?.startsWith('application/json'))return reply({error:'資料格式錯誤'},415);
  try {
