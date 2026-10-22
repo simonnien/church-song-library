@@ -26,6 +26,7 @@ export async function saveSong(song:Song,actor:string=''):Promise<Song> {
  const current=await c.DB.prepare('SELECT data,revision FROM songs WHERE id=?').bind(song.id).first<{data:string;revision:number}>();
  if((current?.revision??0)!==song.revision)throw new Conflict();
  if(!current&&song.revision!==0)throw new Conflict();
+ if(!current&&await c.DB.prepare('SELECT id FROM retired_song_ids WHERE id=?').bind(song.id).first())throw Error('此編號已變更，請重新整理歌曲庫；如需重新使用此編號，請由管理者修改歌曲編號。');
  const before=current?.data??(seed?JSON.stringify(seed):'');
  const statements=[];
  if(before)statements.push(c.DB.prepare('INSERT INTO song_history(song_id,data,saved_at,actor) SELECT ?,?,?,? WHERE COALESCE((SELECT revision FROM songs WHERE id=?),0)=?').bind(song.id,before,now,actor,song.id,song.revision));
