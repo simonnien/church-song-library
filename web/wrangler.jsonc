@@ -1,15 +1,25 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beersheba-songs",
-  "account_id": "14c41807930b24afd1fef4e2e655410e",
+  "account_id": "60a94fcc1420a35fb393626809b90bb2",
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-05-15",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": true,
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "beersheba-songs",
-    "database_id": "cd24f779-a9c6-4b99-8758-4d438e3e7e9a",
-    "migrations_dir": "drizzle"
-  }]
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "beersheba-songs",
+      "database_id": "6c6ac59a-3ef2-4a91-bd2f-92c71d32c0ce",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "songs.beersheba.cc",
+      "custom_domain": true
+    }
+  ]
 }

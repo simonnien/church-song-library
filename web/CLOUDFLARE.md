@@ -1,5 +1,9 @@
 # 自己管理 Cloudflare 網站
 
+正式網址：https://songs.beersheba.cc
+
+正式資源位於 Asher 帳戶；`wrangler.jsonc` 已設定帳戶、D1 與自訂網域。Simon 舊站僅保留備份，資料不會同步，請使用正式網址編輯。
+
 此目錄是 Cloudflare 部署版。原本 Sites 網站仍保留，不會因修改此目錄而更新。
 
 ## 第一次設定
