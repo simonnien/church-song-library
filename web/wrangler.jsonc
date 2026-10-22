@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beersheba-songs",
+  "account_id": "14c41807930b24afd1fef4e2e655410e",
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
@@ -8,7 +9,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "beersheba-songs",
-    "database_id": "00000000-0000-4000-8000-000000000000",
+    "database_id": "cd24f779-a9c6-4b99-8758-4d438e3e7e9a",
     "migrations_dir": "drizzle"
   }]
 }
