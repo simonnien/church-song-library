@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS account_playlists (username TEXT PRIMARY KEY, data TEXT NOT NULL, revision INTEGER NOT NULL);
