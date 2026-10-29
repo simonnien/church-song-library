@@ -4,10 +4,10 @@ import {download} from './exports';
 import {planName,type WorshipInfo} from './playlist';
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export function largePrintXml(songs:Song[]){
- const p=(text:string,bold=false)=>`<w:p><w:pPr><w:snapToGrid w:val="0"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="atLeast"/>${bold?'<w:keepNext/>':''}</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="新細明體"/><w:sz w:val="38"/><w:szCs w:val="38"/>${bold?'<w:b/>':''}</w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
- const prefix=(b:Song['blocks'][number])=>b.type==='主歌'?(b.number||'1')+'. ':({'副歌':'c. ','橋段':'b. ','導歌':'p. ','尾句':'t. '} as Record<string,string>)[b.type]||b.type+' ';
- const body=songs.map(s=>p('【'+s.title+'】',true)+s.blocks.filter(b=>!b.type.startsWith('歌名')).map(b=>b.text.replace(/\r\n/g,'\n').split('\n').map((line,i)=>p((i===0?prefix(b):'')+line)).join('')).join('')).join('');
- return template['word/document.xml'].replace(/<w:body>/,'<w:body>'+body);
+ const p=(text:string,bold=false)=>`<w:p><w:pPr><w:snapToGrid w:val="0"/><w:spacing w:before="0" w:after="0" w:line="558" w:lineRule="atLeast"/>${bold?'<w:keepNext/>':''}</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Comic Sans MS" w:hAnsi="Comic Sans MS" w:eastAsia="MS PGothic"/><w:sz w:val="${bold?48:40}"/><w:szCs w:val="${bold?48:40}"/>${bold?'<w:b/>':''}</w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+ const prefix=(b:Song['blocks'][number])=>b.type==='主歌'?(b.number||'1')+'.':({'副歌':'C.','橋段':'B.','導歌':'P.','尾句':'T.'} as Record<string,string>)[b.type]||b.type+' ';
+ const body=songs.map(s=>p('【'+s.title+'】',true)+s.blocks.filter(b=>!b.type.startsWith('歌名')).map(b=>b.text.replace(/\r\n/g,'\n').split('\n').map((line,i)=>p((i===0?prefix(b):'')+line)).join('')).join(p(''))).join(p(''));
+ return template['word/document.xml'].replace(/<w:body>/,'<w:body>'+body).replace(/<w:pgMar[^>]*\/>/,'<w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="360" w:footer="360" w:gutter="0"/>').replace(/<w:cols[^>]*\/>/,'<w:cols w:num="2" w:space="420"/>');
 }
 export async function largePrintBlob(songs:Song[]){
  if(!songs.length)throw Error('請先加入歌曲');const {default:JSZip}=await import('jszip');const zip=new JSZip();
