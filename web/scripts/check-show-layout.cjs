@@ -66,3 +66,13 @@ assert(wideItem.lines[0].text[0].style.includes("font-family:'Microsoft New Tai 
 assert.equal(css(wideItem.lines[0].text[0].style,'font-size'),55);
 assert.equal(css(wideItem.lines[0].text[0].style,'-webkit-text-stroke-width'),10);
 console.log('PASS: dedicated 32:9 template geometry, font and stroke preserved without double scaling');
+const {freeShowTextLayout}=moduleAt(path.resolve('lib/exports.ts'));
+for(const lines of [['短句'],['A','B'],['長'.repeat(80)]]){
+ const text=''+lines.join('\n\n');
+ const [,output]=showFile({...song,blocks:[{type:'主歌',number:1,text}]},{ratio:'32:9',showTitle:false,textColor:'#FFFFFF'});
+ const actual=Object.values(output.slides)[0];
+ assert.equal(actual.settings.resolution.width,3840);
+ assert.equal(actual.settings.resolution.height,1080);
+ assert.equal(css(actual.items[0].lines[0].text[0].style,'font-size'),freeShowTextLayout(lines,'32:9').size);
+}
+console.log('PASS: preview and export share font sizing at 3840x1080');

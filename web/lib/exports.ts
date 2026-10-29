@@ -64,17 +64,22 @@ export function download(name:string,content:Blob|string,type='application/json'
  const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.type=mime;a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 export function groupColor(name:string){const groups=settings.groups as Record<string,{name:string;color:string}>;const compact=name.replace(/\s/g,'');const exact=Object.entries(groups).find(([,v])=>v.name.replace(/\s/g,'')===compact);const key=exact?.[0]||({'主歌':'verse','副歌':'chorus','導歌':'pre_chorus','橋段':'bridge','尾句':'tag'} as Record<string,string>)[compact.replace(/\d+$/,'')];return {key,color:groups[key]?.color||'#FFFFFF'};}
+export function freeShowTextLayout(lines:string[],ratio:string){
+ const prototype=(ratio==='32:9'?wideSource:source).template.items.find(i=>i.type==='text')!;
+ const num=(style:string,k:string,fallback:number)=>Number(style.match(new RegExp(`(?:^|;)\\s*${k}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
+ const scale=ratio==='32:9'?2:1,style=prototype.lines[0].text[0].style;
+ const base=num(style,'font-size',96),width=num(prototype.style,'width',1890),height=num(prototype.style,'height',272.12);
+ const font=style.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft JhengHei';
+ const stroke=num(style,'-webkit-text-stroke-width',0),lineHeight=num(style,'line-height',1.4);
+ const size=Math.floor(Math.min(base,base*(width-19.2-stroke*2)*.96/Math.max(1,...lines.map(t=>measured(t,base,font))),(height/scale-9.6)/(lines.length*lineHeight))*10)/10;
+ return {size,font,stroke,lineHeight,width,height:height/scale,left:num(prototype.style,'left',15),top:num(prototype.style,'top',28)/scale,scale};
+}
 export function showFile(song:Song,options:Options){
  const pages=pagesFor(song,options);const template=structuredClone(options.ratio==='32:9'?wideSource.template:source.template);const prototype=template.items.find(i=>i.type==='text')!;
- const num=(style:string,k:string,fallback:number)=>Number(style.match(new RegExp(`(?:^|;)\\s*${k}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
  const scale=options.ratio==='32:9'?2:1;
- // FreeShow normalizes item coordinates to 1920x1080, then adapts them to the output aspect ratio.
- // The dedicated wide template already contains its intended normalized font size.
- const runStyle=prototype.lines[0].text[0].style,base=num(runStyle,'font-size',96),width=num(prototype.style,'width',1889.76),height=num(prototype.style,'height',272.12);
- const font=runStyle.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft JhengHei';
- const usableWidth=width-19.2-num(runStyle,'-webkit-text-stroke-width',0)*2,usableHeight=height/scale-9.6;
+ const runStyle=prototype.lines[0].text[0].style;
  const slides:Record<string,any>={},layout:any[]=[],parents=new Map<number,{id:string;entry:any}>();
- pages.forEach((p,i)=>{const id=`slide_${i+1}`,size=Math.floor(Math.min(base,base*usableWidth*.96/Math.max(1,...p.lines.map(t=>measured(t,base,font))),usableHeight/(p.lines.length*1.4))*10)/10;
+ pages.forEach((p,i)=>{const id=`slide_${i+1}`,{size}=freeShowTextLayout(p.lines,options.ratio);
  const item:any=structuredClone(prototype);item.auto=false;item.textFit='none';item.lines=p.lines.map(t=>({align:prototype.lines[0].align+';white-space:pre;text-wrap:nowrap;',text:[{value:t,style:runStyle.replace(/(?:^|;)\s*color\s*:[^;]+/g,';color:'+exportColor(options.textColor)).replace(/font-size\s*:\s*[\d.]+px/,`font-size:${size}px`)+';white-space:pre;text-wrap:nowrap;overflow-wrap:normal;word-break:keep-all;'}]}));
  const items:any[]=[item];
  for(const footer of [{text:p.title,x:24,width:p.width-220,align:'left'},{text:p.number,x:p.width-180,width:156,align:'right'}])if(footer.text){const fs=Math.min(28,28*footer.width/Math.max(1,measured(footer.text,28)))/scale;items.push({type:'text',auto:false,textFit:'none',style:`left:${footer.x/scale}px;top:1020px;width:${footer.width/scale}px;height:40px;`,lines:[{align:`text-align:${footer.align};white-space:pre;text-wrap:nowrap;`,text:[{value:footer.text,style:`font-family:Microsoft JhengHei;font-size:${fs}px;color:${exportColor(options.textColor)};white-space:pre;text-wrap:nowrap;`}]}]});}
