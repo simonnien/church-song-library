@@ -37,3 +37,15 @@ assert.equal(merged.length,1);assert.equal(merged[0].number,'1 / 1');
 assert.equal(JSON.stringify(merged[0].lines),JSON.stringify(['A B C D','E F G H']));
 assert.equal(pagesFor(eight,{ratio:'16:9',showTitle:false}).length,4);
 console.log('PASS: strict 50% threshold, width guard, recursive merge, boundaries and page numbers');
+
+for(const ratio of ['16:9','32:9']){
+ for(const separator of ['\n\n','\r\n\r\n','\n  \n','\n\n\n']){
+  const hard={...song,blocks:[{type:'主歌',number:1,text:'A'+separator+'B'}]};
+  const result=pagesFor(hard,{ratio,showTitle:false,showPageNumbers:true});
+  assert.equal(JSON.stringify(result.map(p=>p.lines)),JSON.stringify([['A'],['B']]));
+  assert.equal(result[1].number,'2 / 2');
+ }
+}
+const boundary={...eight,blocks:[{type:'主歌',number:1,text:'A\nB\nC\nD\n\nE\nF\nG\nH'}]};
+assert.equal(JSON.stringify(pagesFor(boundary,{ratio:'32:9',showTitle:false}).map(p=>p.lines)),JSON.stringify([['A B','C D'],['E F','G H']]));
+console.log('PASS: blank lines force page breaks in both ratios, including compact short pages');

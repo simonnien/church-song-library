@@ -29,7 +29,21 @@ export function pagesFor(song:Song,o:Options):Page[]{
  if(!song.title.trim())throw Error('請輸入歌名');
  if(!song.blocks.some(b=>b.text.trim()&&!b.type.startsWith('歌名')))throw Error('請先輸入歌詞');
  if(o.showTitle&&!song.blocks[0]?.type.startsWith('歌名'))add('歌名',[song.title],-1,140);
- song.blocks.forEach((b,i)=>{if(!o.showTitle&&b.type.startsWith('歌名'))return;const original=b.text.replace(/\r\n/g,'\n').split('\n');const lines=o.ratio==='32:9'&&!b.type.startsWith('歌名')?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original;let chunks:string[][]=[];for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));if(o.ratio==='32:9'&&!b.type.startsWith('歌名'))chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88));chunks.forEach(chunk=>add(label(b),chunk,i));});
+ song.blocks.forEach((b,i)=>{
+  if(!o.showTitle&&b.type.startsWith('歌名'))return;
+  // A blank line is a hard page boundary, before pairing or compacting lines.
+  const sections=b.text.replace(/\r\n?/g,'\n').split(/\n(?:[^\S\n]*\n)+/);
+  for(const section of sections){
+   if(!section.trim())continue;
+   const original=section.split('\n');
+   const wide=o.ratio==='32:9'&&!b.type.startsWith('歌名');
+   const lines=wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original;
+   let chunks:string[][]=[];
+   for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));
+   if(wide)chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88));
+   chunks.forEach(chunk=>add(label(b),chunk,i));
+  }
+ });
  return pages.map((p,i)=>({...p,title:o.showFooterTitle?song.title:'',number:o.showPageNumbers?`${i+1} / ${pages.length}`:''}));
 }
 export function download(name:string,content:Blob|string,type='application/json'){
