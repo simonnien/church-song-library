@@ -3,10 +3,11 @@ import {backgroundById,backgroundUrl,exportColor,SITE_ORIGIN} from './background
 import type {Song,Options} from './model';
 import {label} from './model';
 import source from './template.json';
+import wideSource from './template-wide.json';
 import settings from './groups.json';
 export type Page={group:string;block:number;lines:string[];size:number;width:number;height:number;title:string;number:string};
 export const filename=(s:Song)=>`${s.id}-${s.title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[ .]+$/g,'').slice(0,100)||'未命名'}`;
-export function measured(text:string,size:number){const ctx=document.createElement('canvas').getContext('2d')!;ctx.font=`bold ${size}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;return ctx.measureText(text).width;}
+export function measured(text:string,size:number,font='"Microsoft JhengHei", "Noto Sans TC", sans-serif'){const ctx=document.createElement('canvas').getContext('2d')!;ctx.font=`bold ${size}px ${font}`;return ctx.measureText(text).width;}
 // Only complete, nonblank neighboring pages qualify. Never cross a song block.
 export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number,hardLines:Set<number>=new Set()):string[][]{
  let index=0;let result=pages.map(p=>p.map(text=>({text,start:index++}))),changed=true;
@@ -45,7 +46,13 @@ export function pagesFor(song:Song,o:Options):Page[]{
    }
    let chunks:string[][]=[];
    for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));
-   if(wide)chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88),hardLines);
+   if(wide){
+    const item=wideSource.template.items[0],style=item.lines[0].text[0].style;
+    const value=(css:string,key:string,fallback:number)=>Number(css.match(new RegExp(`(?:^|;)\\s*${key}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
+    const font=style.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft New Tai Lue';
+    const usable=(value(item.style,'width',1890)-19.2-2*value(style,'-webkit-text-stroke-width',0))*.96;
+    chunks=compactShortPages(chunks,usable,t=>measured(t,value(style,'font-size',55),font),hardLines);
+   }
    chunks.forEach(chunk=>add(label(b),chunk,i));
   }
  });
@@ -58,15 +65,16 @@ export function download(name:string,content:Blob|string,type='application/json'
 }
 export function groupColor(name:string){const groups=settings.groups as Record<string,{name:string;color:string}>;const compact=name.replace(/\s/g,'');const exact=Object.entries(groups).find(([,v])=>v.name.replace(/\s/g,'')===compact);const key=exact?.[0]||({'主歌':'verse','副歌':'chorus','導歌':'pre_chorus','橋段':'bridge','尾句':'tag'} as Record<string,string>)[compact.replace(/\d+$/,'')];return {key,color:groups[key]?.color||'#FFFFFF'};}
 export function showFile(song:Song,options:Options){
- const pages=pagesFor(song,options);const template=structuredClone(source.template);const prototype=template.items.find(i=>i.type==='text')!;
+ const pages=pagesFor(song,options);const template=structuredClone(options.ratio==='32:9'?wideSource.template:source.template);const prototype=template.items.find(i=>i.type==='text')!;
  const num=(style:string,k:string,fallback:number)=>Number(style.match(new RegExp(`(?:^|;)\\s*${k}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
  const scale=options.ratio==='32:9'?2:1;
  // FreeShow normalizes item coordinates to 1920x1080, then adapts them to the output aspect ratio.
- prototype.lines[0].text[0].style=prototype.lines[0].text[0].style.replace(/((?:font-size|-webkit-text-stroke-width)\s*:\s*)([\d.]+)(px)/g,(_,a,b,c)=>a+Number(b)/scale+c);
+ // The dedicated wide template already contains its intended normalized font size.
  const runStyle=prototype.lines[0].text[0].style,base=num(runStyle,'font-size',96),width=num(prototype.style,'width',1889.76),height=num(prototype.style,'height',272.12);
+ const font=runStyle.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft JhengHei';
  const usableWidth=width-19.2-num(runStyle,'-webkit-text-stroke-width',0)*2,usableHeight=height/scale-9.6;
  const slides:Record<string,any>={},layout:any[]=[],parents=new Map<number,{id:string;entry:any}>();
- pages.forEach((p,i)=>{const id=`slide_${i+1}`,size=Math.floor(Math.min(base,base*usableWidth*.96/Math.max(1,...p.lines.map(t=>measured(t,base))),usableHeight/(p.lines.length*1.4))*10)/10;
+ pages.forEach((p,i)=>{const id=`slide_${i+1}`,size=Math.floor(Math.min(base,base*usableWidth*.96/Math.max(1,...p.lines.map(t=>measured(t,base,font))),usableHeight/(p.lines.length*1.4))*10)/10;
  const item:any=structuredClone(prototype);item.auto=false;item.textFit='none';item.lines=p.lines.map(t=>({align:prototype.lines[0].align+';white-space:pre;text-wrap:nowrap;',text:[{value:t,style:runStyle.replace(/(?:^|;)\s*color\s*:[^;]+/g,';color:'+exportColor(options.textColor)).replace(/font-size\s*:\s*[\d.]+px/,`font-size:${size}px`)+';white-space:pre;text-wrap:nowrap;overflow-wrap:normal;word-break:keep-all;'}]}));
  const items:any[]=[item];
  for(const footer of [{text:p.title,x:24,width:p.width-220,align:'left'},{text:p.number,x:p.width-180,width:156,align:'right'}])if(footer.text){const fs=Math.min(28,28*footer.width/Math.max(1,measured(footer.text,28)))/scale;items.push({type:'text',auto:false,textFit:'none',style:`left:${footer.x/scale}px;top:1020px;width:${footer.width/scale}px;height:40px;`,lines:[{align:`text-align:${footer.align};white-space:pre;text-wrap:nowrap;`,text:[{value:footer.text,style:`font-family:Microsoft JhengHei;font-size:${fs}px;color:${exportColor(options.textColor)};white-space:pre;text-wrap:nowrap;`}]}]});}

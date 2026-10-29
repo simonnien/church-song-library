@@ -58,3 +58,11 @@ for(const ratio of ['16:9','32:9']){
 const protectedLines=pagesFor({...song,blocks:[{type:'主歌',number:1,text:'A\n\nB\n\nC\n\nD'}]},{ratio:'32:9',showTitle:false});
 assert.equal(JSON.stringify(protectedLines.map(p=>p.lines)),JSON.stringify([['A','B'],['C','D']]));
 console.log('PASS: one blank line protects line breaks against wide pairing and recursive compaction');
+
+const [,wideTemplateShow]=showFile({...song,blocks:[{type:'主歌',number:1,text:'A\n\nB'}]},{ratio:'32:9',showTitle:false,textColor:'#FFFFFF'});
+const wideItem=Object.values(wideTemplateShow.slides)[0].items[0];
+assert.equal(wideItem.style,JSON.parse(fs.readFileSync('lib/template-wide.json','utf8')).template.items[0].style);
+assert(wideItem.lines[0].text[0].style.includes("font-family:'Microsoft New Tai Lue'"));
+assert.equal(css(wideItem.lines[0].text[0].style,'font-size'),55);
+assert.equal(css(wideItem.lines[0].text[0].style,'-webkit-text-stroke-width'),10);
+console.log('PASS: dedicated 32:9 template geometry, font and stroke preserved without double scaling');

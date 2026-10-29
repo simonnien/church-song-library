@@ -1,0 +1,42 @@
+{
+    "template": {
+        "id": "928fa5a5b7c",
+        "name": "32:9歌詞範本",
+        "color": null,
+        "category": "song",
+        "items": [
+            {
+                "type": "text",
+                "style": "padding:4.8px 9.6px 4.8px 9.6px;left:15.00px;top:28.00px;width:1890.00px;height:512.00px;",
+                "align": "align-items:flex-start;",
+                "lines": [
+                    {
+                        "align": "text-align: center;;;;;;;;;;;;;;;",
+                        "text": [
+                            {
+                                "value": "歌詞",
+                                "style": "font-weight: bold;font-family:'Microsoft New Tai Lue';text-shadow:;line-height:1.2em;font-size:55px;color:#FFFFFF;-webkit-text-stroke-width:10px;"
+                            }
+                        ]
+                    },
+                    {
+                        "align": "text-align: center;;;;;;;;;;;;;;;",
+                        "text": [
+                            {
+                                "value": "",
+                                "style": "font-weight: bold;font-family:'Microsoft New Tai Lue';text-shadow:;line-height:1.2em;font-size:55px;color:#FFFFFF;-webkit-text-stroke-width:10px;"
+                            }
+                        ]
+                    }
+                ],
+                "scrolling": {
+                    "type": "none"
+                },
+                "list": {
+                    "enabled": false
+                }
+            }
+        ],
+        "modified": 1792822143137
+    }
+}
