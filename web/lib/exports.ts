@@ -15,7 +15,7 @@ export function compactShortPages(pages:string[][],usableWidth:number,measure:(t
   for(let i=0;i<result.length;i++){
    const a=result[i],b=result[i+1];
    if(b&&a.length===2&&b.length===2&&!hardLines.has(a[1].start)&&!hardLines.has(b[1].start)&&[...a,...b].every(t=>t.text.trim()&&measure(t.text)<usableWidth*.5)){
-    const joined=[{text:a.map(t=>t.text).join(' '),start:a[0].start},{text:b.map(t=>t.text).join(' '),start:b[0].start}];
+    const joined=[{text:a.map(t=>t.text).join('  '),start:a[0].start},{text:b.map(t=>t.text).join('  '),start:b[0].start}];
     if(joined.every(t=>measure(t.text)<=usableWidth)){next.push(joined);i++;changed=true;continue;}
    }
    next.push(a);
@@ -40,9 +40,9 @@ export function pagesFor(song:Song,o:Options):Page[]{
    const lines:string[]=[],hardLines=new Set<number>();
    for(const part of section.split(/\n[^\S\n]*\n/)){
     if(!part.trim())continue;
-    const original=part.split('\n');
+    const original=part.split('\n').map(line=>line.replace(/[^\S\n]+/g,' ').trim());
     if(lines.length)hardLines.add(lines.length);
-    lines.push(...(wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original));
+    lines.push(...(wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+'  '+original[j*2+1]):original));
    }
    let chunks:string[][]=[];
    for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));
