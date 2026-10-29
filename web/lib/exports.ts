@@ -8,20 +8,20 @@ export type Page={group:string;block:number;lines:string[];size:number;width:num
 export const filename=(s:Song)=>`${s.id}-${s.title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[ .]+$/g,'').slice(0,100)||'未命名'}`;
 export function measured(text:string,size:number){const ctx=document.createElement('canvas').getContext('2d')!;ctx.font=`bold ${size}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;return ctx.measureText(text).width;}
 // Only complete, nonblank neighboring pages qualify. Never cross a song block.
-export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number):string[][]{
- let result=pages.map(p=>[...p]),changed=true;
- while(changed){changed=false;const next:string[][]=[];
+export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number,hardLines:Set<number>=new Set()):string[][]{
+ let index=0;let result=pages.map(p=>p.map(text=>({text,start:index++}))),changed=true;
+ while(changed){changed=false;const next:typeof result=[];
   for(let i=0;i<result.length;i++){
    const a=result[i],b=result[i+1];
-   if(b&&a.length===2&&b.length===2&&[...a,...b].every(t=>t.trim()&&measure(t)<usableWidth*.5)){
-    const joined=[a.join(' '),b.join(' ')];
-    if(joined.every(t=>measure(t)<=usableWidth)){next.push(joined);i++;changed=true;continue;}
+   if(b&&a.length===2&&b.length===2&&!hardLines.has(a[1].start)&&!hardLines.has(b[1].start)&&[...a,...b].every(t=>t.text.trim()&&measure(t.text)<usableWidth*.5)){
+    const joined=[{text:a.map(t=>t.text).join(' '),start:a[0].start},{text:b.map(t=>t.text).join(' '),start:b[0].start}];
+    if(joined.every(t=>measure(t.text)<=usableWidth)){next.push(joined);i++;changed=true;continue;}
    }
    next.push(a);
   }
   result=next;
  }
- return result;
+ return result.map(p=>p.map(t=>t.text));
 }
 export function pagesFor(song:Song,o:Options):Page[]{
  const width=o.ratio==='32:9'?3840:1920,pages:Page[]=[];
@@ -31,16 +31,21 @@ export function pagesFor(song:Song,o:Options):Page[]{
  if(o.showTitle&&!song.blocks[0]?.type.startsWith('歌名'))add('歌名',[song.title],-1,140);
  song.blocks.forEach((b,i)=>{
   if(!o.showTitle&&b.type.startsWith('歌名'))return;
-  // A blank line is a hard page boundary, before pairing or compacting lines.
-  const sections=b.text.replace(/\r\n?/g,'\n').split(/\n(?:[^\S\n]*\n)+/);
+  // Two blank lines force a page; one blank line protects a line boundary.
+  const sections=b.text.replace(/\r\n?/g,'\n').split(/\n(?:[^\S\n]*\n){2,}/);
   for(const section of sections){
    if(!section.trim())continue;
-   const original=section.split('\n');
    const wide=o.ratio==='32:9'&&!b.type.startsWith('歌名');
-   const lines=wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original;
+   const lines:string[]=[],hardLines=new Set<number>();
+   for(const part of section.split(/\n[^\S\n]*\n/)){
+    if(!part.trim())continue;
+    const original=part.split('\n');
+    if(lines.length)hardLines.add(lines.length);
+    lines.push(...(wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+' '+original[j*2+1]):original));
+   }
    let chunks:string[][]=[];
    for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));
-   if(wide)chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88));
+   if(wide)chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88),hardLines);
    chunks.forEach(chunk=>add(label(b),chunk,i));
   }
  });
