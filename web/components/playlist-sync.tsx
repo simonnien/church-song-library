@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from 'react';
+import PlaylistShare from './playlist-share';
 const keys=['worship-song-ids','worship-song-options-v1','worship-default-options-v1','worship-info'];
 const fields=['ids','individual','options','info'];
 function read(){return Object.fromEntries(keys.map((k,i)=>{try{return [fields[i],JSON.parse(localStorage.getItem(k)|| (i===0?'[]':'{}'))]}catch{return [fields[i],i===0?[]:{}]}}))}
@@ -26,5 +27,5 @@ export default function PlaylistSync({user,onLoad}:{user:string;onLoad:()=>void}
  void load();window.addEventListener('playlist-change',changed);
  return ()=>{if(dirty&&ready&&!saving)void save();stopped=true;clearTimeout(timer);window.removeEventListener('playlist-change',changed)};
  },[user,retry]);
- return <div style={{padding:'6px 16px',background:'#edf3e9',fontSize:12}} role="status">{status}{user&&<button style={{marginLeft:12}} onClick={()=>{localStorage.setItem('playlist-backup:'+user,JSON.stringify(read()));setRetry(n=>n+1)}}>重新載入雲端歌單</button>}{loading&&<div style={{position:'fixed',inset:0,zIndex:9999,background:'#ffffffdd',display:'grid',placeItems:'center'}}>正在載入帳號歌單…</div>}</div>;
+ return <div style={{padding:'6px 16px',background:'#edf3e9',fontSize:12}} role="status">{status}{user&&<button style={{marginLeft:12}} onClick={()=>{localStorage.setItem('playlist-backup:'+user,JSON.stringify(read()));setRetry(n=>n+1)}}>重新載入雲端歌單</button>}{user&&!loading&&status==='歌單已同步至帳號'&&<PlaylistShare user={user} read={read} onImport={data=>{localStorage.setItem('playlist-before-import:'+user,JSON.stringify(read()));keys.forEach((k,i)=>localStorage.setItem(k,JSON.stringify(data[fields[i]])));callback.current();window.dispatchEvent(new Event('playlist-change'));}}/>}{loading&&<div style={{position:'fixed',inset:0,zIndex:9999,background:'#ffffffdd',display:'grid',placeItems:'center'}}>正在載入帳號歌單…</div>}</div>;
 }
