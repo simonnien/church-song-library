@@ -39,3 +39,35 @@
 .song-thumbnail>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .plan-songs .song-thumbnail-title{display:-webkit-box;position:relative;z-index:1;padding:4px;text-align:center;font-size:clamp(9px,7cqw,13px);font-weight:700;line-height:1.2;text-shadow:0 1px 3px #000,0 0 5px #000;overflow:hidden;overflow-wrap:anywhere;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 @media(max-width:760px){.plan-songs>li{grid-template-columns:112px minmax(0,1fr);gap:10px}.plan-song-order{grid-column:2}.plan-songs>li>.song-thumbnail{align-self:start;margin-top:3px}}
+
+/* Consistent action hierarchy and accessible touch targets. */
+button.primary,button.secondary{min-height:44px;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;line-height:1.4;gap:8px;transition:background .15s,box-shadow .15s,transform .15s}
+button.primary{background:#245d4c;color:#fff;border:1px solid #245d4c;box-shadow:0 2px 5px #193e2420}
+button.secondary{background:#fff;color:#245d4c;border:1px solid #a8bcb1}
+button.primary:hover:not(:disabled){background:#174b3c;box-shadow:0 3px 9px #193e2430}
+button.secondary:hover:not(:disabled){background:#edf4ef;border-color:#245d4c}
+button:disabled{cursor:not-allowed;opacity:.5;box-shadow:none}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #84bca6;outline-offset:3px}
+.settings-modal input:not([type=checkbox]):not([type=radio]):not([type=color]),.settings-modal select{min-height:44px;padding:11px 12px;border:1px solid #aebdb4;border-radius:9px;background:#fff;color:#243b35;font-size:15px;max-width:100%;box-sizing:border-box}
+.settings-modal .close-modal{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #cfdbd2;border-radius:10px;color:#365c4c}
+.playlist-sync-bar{display:flex;align-items:center;gap:12px;padding:10px 24px;background:#f0f5ef;border-bottom:1px solid #d8e3d9;flex-wrap:wrap}
+.sync-status{flex:1;min-width:180px;font-size:13px;color:#426452;line-height:1.5}
+.playlist-sync-bar .primary,.playlist-sync-bar .secondary{width:auto;margin:0;white-space:normal}
+.share-modal{width:600px;background:#f8faf7;padding:28px;line-height:1.6}
+.share-eyebrow{font-size:10px;letter-spacing:2px;color:#5c7c69;font-weight:700}
+.share-modal h2{font-size:25px;line-height:1.4;margin:5px 40px 10px 0;color:#244d3e}
+.share-description{color:#607267;font-size:14px;margin-bottom:16px}
+.share-note{background:#e9f1e6;border:1px solid #cfdfc8;border-radius:9px;padding:10px 12px;font-size:13px;color:#42603b;margin-bottom:16px}
+.share-card{background:#fff;border:1px solid #d3dfd5;border-radius:14px;padding:20px;margin-top:16px;box-shadow:0 2px 8px #213a3005;display:grid;gap:12px}
+.share-card h3{display:flex;align-items:center;gap:9px;margin:0;font-size:17px;color:#254e3f}
+.share-card p{font-size:14px;color:#617367}
+.share-card label{display:grid;gap:7px;font-size:13px;font-weight:600;color:#365743}
+.share-card input{width:100%;font-family:ui-monospace,monospace;min-width:0}
+.share-card .primary,.share-card .secondary{width:100%;margin:0}
+.share-result{display:grid;gap:10px;background:#f2f6ef;border:1px solid #d7e3d1;padding:14px;border-radius:10px;min-width:0}
+.share-result small{font-size:12px;color:#506a57}
+.share-song-ids{overflow-wrap:anywhere;max-height:110px;overflow:auto}
+.plan-song-order button,.song-setting-actions button{min-height:40px;border:1px solid #bbcbbf;border-radius:9px;padding:8px 12px;background:#fff;color:#315a47;font-weight:500}
+.plan-song-order button:hover:not(:disabled),.song-setting-actions button:hover:not(:disabled){background:#eaf2e7;border-color:#6b977c}
+@media(min-width:1001px){.workspace{height:calc(100dvh - 154px)}}
+@media(max-width:640px){.playlist-sync-bar{padding:10px 14px;gap:8px}.sync-status{flex-basis:100%;font-size:12px}.playlist-sync-bar .primary,.playlist-sync-bar .secondary{flex:1;min-width:135px;font-size:13px}.share-modal{padding:20px 16px max(24px,env(safe-area-inset-bottom));width:100%}.share-modal h2{font-size:22px}.share-card{padding:16px}.share-card input{font-size:16px}.settings-modal input:not([type=checkbox]):not([type=radio]):not([type=color]),.settings-modal select{font-size:16px}}
