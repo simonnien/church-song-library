@@ -9,8 +9,8 @@ export type Page={group:string;block:number;lines:string[];size:number;width:num
 export const filename=(s:Song)=>`${s.id}-${s.title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[ .]+$/g,'').slice(0,100)||'未命名'}`;
 export function measured(text:string,size:number,font='"Microsoft JhengHei", "Noto Sans TC", sans-serif'){const ctx=document.createElement('canvas').getContext('2d')!;ctx.font=`bold ${size}px ${font}`;return ctx.measureText(text).width;}
 // Only complete, nonblank neighboring pages qualify. Never cross a song block.
-export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number,hardLines:Set<number>=new Set()):string[][]{
- let index=0;let result=pages.map(p=>p.map(text=>({text,start:index++}))),changed=true;
+export function compactShortPages(pages:string[][],usableWidth:number,measure:(text:string)=>number,hardLines:Set<number>=new Set(),compact=true):string[][]{
+ let index=0;let result=pages.map(p=>p.map(text=>({text,start:index++}))),changed=compact;
  while(changed){changed=false;const next:typeof result=[];
   for(let i=0;i<result.length;i++){
    const a=result[i],b=result[i+1];
@@ -21,6 +21,19 @@ export function compactShortPages(pages:string[][],usableWidth:number,measure:(t
    next.push(a);
   }
   result=next;
+ }
+ // Rebalance a trailing single line without crossing an explicit line boundary.
+ if(result.length>1){
+  const last=result[result.length-1],previous=result[result.length-2];
+  if(last.length===1&&previous.length===2){
+   const [a,b]=previous,c=last[0];
+   const candidates=[];
+   if(!hardLines.has(b.start))candidates.push([{text:a.text+'  '+b.text,start:a.start},c]);
+   if(!hardLines.has(c.start))candidates.push([a,{text:b.text+'  '+c.text,start:b.start}]);
+   const fitting=candidates.filter(pair=>pair.every(t=>measure(t.text)<=usableWidth));
+   fitting.sort((a,b)=>Math.max(...a.map(t=>measure(t.text)))-Math.max(...b.map(t=>measure(t.text))));
+   if(fitting.length)result.splice(result.length-2,2,fitting[0]);
+  }
  }
  return result.map(p=>p.map(t=>t.text));
 }
@@ -53,6 +66,7 @@ export function pagesFor(song:Song,o:Options):Page[]{
     const usable=(value(item.style,'width',1890)-19.2-2*value(style,'-webkit-text-stroke-width',0))*.96;
     chunks=compactShortPages(chunks,usable,t=>measured(t,value(style,'font-size',55),font),hardLines);
    }
+   if(!wide&&!b.type.startsWith('歌名'))chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88),hardLines,false);
    chunks.forEach(chunk=>add(label(b),chunk,i));
   }
  });

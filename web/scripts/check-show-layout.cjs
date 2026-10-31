@@ -20,8 +20,8 @@ const {pagesFor}=moduleAt(path.resolve('lib/exports.ts'));
 const song={id:'001',title:'Layout test',blocks:[{type:'主歌',number:1,text:'A\nB\nC\nD\nE'},{type:'副歌',number:0,text:'F\nG'}]};
 const narrow=pagesFor(song,{ratio:'16:9',showTitle:false});
 const wide=pagesFor(song,{ratio:'32:9',showTitle:false});
-assert.equal(narrow.length,4);assert.equal(wide.length,3);
-assert.equal(JSON.stringify(wide.map(p=>p.lines)),JSON.stringify([['A  B','C  D'],['E'],['F  G']]));
+assert.equal(narrow.length,3);assert.equal(wide.length,2);
+assert.equal(JSON.stringify(wide.map(p=>p.lines)),JSON.stringify([['A  B','C  D  E'],['F  G']]));
 console.log('PASS: wide layout pairs lines, preserves odd final lines and section boundaries');
 const {compactShortPages}=moduleAt(path.resolve('lib/exports.ts'));
 const compact=(p,w=100)=>JSON.stringify(compactShortPages(p,w,t=>t.length));
@@ -29,7 +29,7 @@ assert.equal(compact([['A','B'],['C','D']]),JSON.stringify([['A  B','C  D']]));
 for(const length of [50,51]){const input=[['X'.repeat(length),'B'],['C','D']];assert.equal(compact(input),JSON.stringify(input));}
 const overflow=[['x'.repeat(49),'x'.repeat(49)],['x'.repeat(49),'x'.repeat(49)]];
 assert.equal(compact(overflow,98.5),JSON.stringify(overflow));
-for(const input of [[['A',''],['C','D']],[['A','B'],['C']]])assert.equal(compact(input),JSON.stringify(input));
+for(const input of [[['A',''],['C','D']]])assert.equal(compact(input),JSON.stringify(input));
 assert.equal(compact(Array.from({length:4},(_,i)=>[`${i}a`,`${i}b`])),JSON.stringify([['0a  0b  1a  1b','2a  2b  3a  3b']]));
 const eight={...song,blocks:[{type:'主歌',number:1,text:'A\nB\nC\nD\nE\nF\nG\nH'}]};
 const merged=pagesFor(eight,{ratio:'32:9',showTitle:false,showPageNumbers:true});
@@ -81,3 +81,9 @@ const spaced={...song,blocks:[{type:'主歌',number:1,text:'  A   B\n    C　　
 assert.equal(JSON.stringify(pagesFor(spaced,{ratio:'32:9',showTitle:false}).map(p=>p.lines)),JSON.stringify([['A B  C D']]));
 assert.equal(JSON.stringify(pagesFor(spaced,{ratio:'16:9',showTitle:false}).map(p=>p.lines)),JSON.stringify([['A B','C D']]));
 console.log('PASS: source whitespace becomes one space, joined source lines get two spaces');
+
+assert.equal(compact([['A','B'],['C']]),JSON.stringify([['A  B','C']]));
+assert.equal(JSON.stringify(compactShortPages([['A','B'],['C']],100,t=>t.length,new Set([1,2]))),JSON.stringify([['A','B'],['C']]));
+const tooLong=[['A'.repeat(60),'B'.repeat(60)],['C'.repeat(60)]];
+assert.equal(compact(tooLong),JSON.stringify(tooLong));
+console.log('PASS: trailing single lines rebalance only when width and explicit breaks allow');
