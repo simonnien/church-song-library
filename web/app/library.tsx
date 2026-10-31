@@ -80,13 +80,15 @@ export default function Library(){
  };
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
-   if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey||event.key.toLowerCase()!=='s')return;
+   if(!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey||(event.code!=='KeyS'&&event.key.toLowerCase()!=='s'))return;
    event.preventDefault();
-   if(event.repeat||event.isComposing)return;
+   event.stopPropagation();
+   if(event.repeat)return;
+   if(event.isComposing){setMessage('請先完成中文輸入，再按 Ctrl+S 儲存');return;}
    shortcutSave.current();
   };
-  window.addEventListener('keydown',handler);
-  return ()=>window.removeEventListener('keydown',handler);
+  window.addEventListener('keydown',handler,{capture:true});
+  return ()=>window.removeEventListener('keydown',handler,{capture:true});
  },[]);
  async function save(){if(!draft||!canEdit||busy)return;setBusy(true);setError('');try{const r=await fetch('/api/library',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)}),data=await r.json() as {error:string;songs:Song[];song:Song;canEdit:boolean;editor?:string;storage:string};if(!r.ok)throw Error(data.error);const song=data.song as Song;setSongs(all=>[...all.filter(s=>s.id!==song.id),song].sort((a,b)=>a.number-b.number));setDraft(song);setBaseline(JSON.stringify(song));clearDraft(localStorage,editorName,song.id);setRecovery(null);setMessage('已儲存，並標記為已確認');return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false)}}
  function create(){if(!canEdit||!leave())return;const value=window.prompt('新增歌曲編號',String(Math.max(0,...songs.map(s=>s.number))+1));if(value===null)return;const number=Number(value);if(!/^\d{1,8}$/.test(value)||number<1||songs.some(s=>s.number===number)){setError('請輸入未使用的正整數編號');return}const title=window.prompt('歌名');if(!title?.trim())return;setDraft({id:String(number).padStart(3,'0'),number,title:title.trim(),youtube:'',links:[],blocks:[{type:'主歌',number:'1',text:''}],status:'需確認',revision:0});setBaseline('');openDetail();setTab('lyrics');}
