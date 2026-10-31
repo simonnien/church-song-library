@@ -87,3 +87,13 @@ assert.equal(JSON.stringify(compactShortPages([['A','B'],['C']],100,t=>t.length,
 const tooLong=[['A'.repeat(60),'B'.repeat(60)],['C'.repeat(60)]];
 assert.equal(compact(tooLong),JSON.stringify(tooLong));
 console.log('PASS: trailing single lines rebalance only when width and explicit breaks allow');
+
+const fitFirst={...song,blocks:[{type:'主歌',number:1,text:Array(4).fill('字'.repeat(20)).join('\n')}]};
+const fitPages=pagesFor(fitFirst,{ratio:'32:9',showTitle:false});
+assert.equal(fitPages.length,2);
+assert(fitPages.every(p=>p.lines.length===2&&p.lines.every(line=>line==='字'.repeat(20))));
+assert(fitPages.every(p=>freeShowTextLayout(p.lines,'32:9').size===55));
+const unavoidable=pagesFor({...song,blocks:[{type:'主歌',number:1,text:'字'.repeat(80)}]},{ratio:'32:9',showTitle:false});
+assert.equal(unavoidable[0].lines[0],'字'.repeat(80));
+assert(freeShowTextLayout(unavoidable[0].lines,'32:9').size<55);
+console.log('PASS: preserve template font by adding pages; shrink only an individually overlong source line');

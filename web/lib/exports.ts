@@ -50,20 +50,27 @@ export function pagesFor(song:Song,o:Options):Page[]{
   for(const section of sections){
    if(!section.trim())continue;
    const wide=o.ratio==='32:9'&&!b.type.startsWith('歌名');
+    const item=wideSource.template.items[0],style=item.lines[0].text[0].style;
+    const value=(css:string,key:string,fallback:number)=>Number(css.match(new RegExp(`(?:^|;)\\s*${key}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
+    const font=style.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft New Tai Lue';
+    const usable=(value(item.style,'width',1890)-19.2-2*value(style,'-webkit-text-stroke-width',0))*.96;
    const lines:string[]=[],hardLines=new Set<number>();
    for(const part of section.split(/\n[^\S\n]*\n/)){
     if(!part.trim())continue;
     const original=part.split('\n').map(line=>line.replace(/[^\S\n]+/g,' ').trim());
     if(lines.length)hardLines.add(lines.length);
-    lines.push(...(wide?original.filter((_,j)=>j%2===0).map((line,j)=>original[j*2+1]===undefined?line:line+'  '+original[j*2+1]):original));
+    if(wide){
+     for(let j=0;j<original.length;j++){
+      const joined=original[j]+'  '+(original[j+1]||'');
+      // Never shrink text merely to combine two source lines.
+      if(j+1<original.length&&measured(joined,value(style,'font-size',55),font)<=usable){lines.push(joined);j++;}
+      else lines.push(original[j]);
+     }
+    }else lines.push(...original);
    }
    let chunks:string[][]=[];
    for(let j=0;j<lines.length;j+=2)chunks.push(lines.slice(j,j+2));
    if(wide){
-    const item=wideSource.template.items[0],style=item.lines[0].text[0].style;
-    const value=(css:string,key:string,fallback:number)=>Number(css.match(new RegExp(`(?:^|;)\\s*${key}\\s*:\\s*([\\d.]+)`))?.[1]??fallback);
-    const font=style.match(/font-family\s*:\s*([^;]+)/)?.[1]||'Microsoft New Tai Lue';
-    const usable=(value(item.style,'width',1890)-19.2-2*value(style,'-webkit-text-stroke-width',0))*.96;
     chunks=compactShortPages(chunks,usable,t=>measured(t,value(style,'font-size',55),font),hardLines);
    }
    if(!wide&&!b.type.startsWith('歌名'))chunks=compactShortPages(chunks,(width-48)*.96,t=>measured(t,88),hardLines,false);
