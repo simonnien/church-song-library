@@ -2,7 +2,8 @@ import {editor,sameOrigin,newToken,hashToken} from '@/lib/auth';
 import {config} from '@/lib/store';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export async function POST(request:Request){
- const user=await editor();if(!user||!sameOrigin(request))return reply({error:'請先登入編輯者帳號'},403);
+ if(!sameOrigin(request))return reply({error:'請從本站操作分享歌單'},403);
+ const user=(await editor())||'';
  try{
  const raw=await request.text();if(raw.length>250000)return reply({error:'歌單內容過大'},413);
  const input=JSON.parse(raw);if(input.owner!==user)return reply({error:'帳號已變更，請重新整理'},409);
