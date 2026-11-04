@@ -1,3 +1,4 @@
+import {flushSongIndex} from '@/lib/song-index-sync';
 import {editor,passwordRecord,sameOrigin,isAdmin} from '@/lib/auth';
 import {config,driveReady} from '@/lib/store';
 import type {Song} from '@/lib/model';
@@ -25,6 +26,6 @@ export async function POST(request:Request){
    db.prepare(`UPDATE songs SET id=?,data=?,revision=?,updated=? WHERE id=? AND ${guard}`).bind(newId,JSON.stringify(next),next.revision,now,id,...args),
   ]);
   if(result[2].meta.changes!==1)return reply({error:'編號或歌曲已被其他人更新，請重新整理'},409);
-  return reply({song:next});
+  return reply({song:next,indexSync:await flushSongIndex()});
  }catch{return reply({error:'修改失敗，請重新整理確認歌曲與編號'},500)}
 }
