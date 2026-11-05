@@ -14,8 +14,9 @@ function doPost(e) {
   const titles=new Map(index.map(s=>[Number(s.id),s.title]));
   const url='https://www.googleapis.com/drive/v3/files/'+FILE_ID;
   const headers={Authorization:'Bearer '+ScriptApp.getOAuthToken()};
+  const metadata=JSON.parse(UrlFetchApp.fetch('https://www.googleapis.com/drive/v2/files/'+FILE_ID+'?fields=etag',{headers}).getContentText());
+  const tag=metadata.etag ? ['etag',metadata.etag] : null;
   const raw=UrlFetchApp.fetch(url+'?alt=media',{headers});
-  const tag=Object.entries(raw.getAllHeaders()).find(([k])=>k.toLowerCase()==='etag');
   if(!tag)throw Error('缺少 Drive 版本，未寫入');
   const parts=Utilities.unzip(raw.getBlob().setContentType('application/zip'));
   const part=n=>parts.find(b=>b.getName()===n);
@@ -34,12 +35,12 @@ function doPost(e) {
    if(Number(get(col).getChildText('v',ns))!==n)throw Error('原表版面已改變');
    const c=get(col+1);if(!c||c.getChild('f',ns))throw Error('目標格不存在或含公式');
    const title=titles.get(n);
-   c.removeChildren('v',ns);c.removeChildren('is',ns);c.removeAttribute('t');
+   for(const name of ['v','is']){const old=c.getChild(name,ns);if(old)c.removeContent(old);}c.removeAttribute('t');
    if(title){c.setAttribute('t','inlineStr');c.addContent(XmlService.createElement('is',ns).addContent(XmlService.createElement('t',ns).setText(title)))}
   }
   sheet.setDataFromString(XmlService.getRawFormat().format(doc));
   const output=Utilities.zip(parts);
-  UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files/'+FILE_ID+'?uploadType=media',{method:'patch',headers:{...headers,'If-Match':String(tag[1])},contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',payload:output.getBytes()});
+  UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v2/files/'+FILE_ID+'?uploadType=media',{method:'put',headers:{...headers,'If-Match':String(tag[1])},contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',payload:output.getBytes()});
   return reply(true);
  }catch(err){console.error(String(err));return reply(false)}finally{if(lock.hasLock())lock.releaseLock()}
 }
