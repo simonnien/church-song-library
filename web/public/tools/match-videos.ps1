@@ -1,16 +1,22 @@
-﻿param([string]$VideoFolder,[string]$ShowsFolder,[string]$PackageFolder=$PSScriptRoot,[switch]$NonInteractive)
+﻿param([string]$VideoFolder,[string]$ShowsFolder,[string]$PackageFolder=$PSScriptRoot,[switch]$NonInteractive,[ValidateSet('Keep','Overwrite')][string]$ExistingAction='Keep')
 $ErrorActionPreference='Stop'
+$overwrites=@();$written=@();$backupFolder=$null
 Add-Type -AssemblyName System.Windows.Forms
 function Choose-Folder($description){$picker=New-Object Windows.Forms.FolderBrowserDialog;$picker.Description=$description;if($picker.ShowDialog() -ne 'OK'){throw '已取消，未產生匯入檔'};return $picker.SelectedPath}
 function Read-Json($path){return Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json}
 function Song-Title($name){return (($name -replace '^\s*\d+\s*[-_－–—]\s*','').Trim() -replace '\s+',' ').ToLowerInvariant()}
 function Save-Json($path,$value){[IO.File]::WriteAllText($path,(ConvertTo-Json -InputObject $value -Depth 100),[Text.UTF8Encoding]::new($false))}
+function Song-Number($show){
+ $value=[string]$show.meta.number
+ if($value -notmatch '^\d+$'){$value='';if($show.name -match '^\s*(\d+)\s*[-_－–—]'){$value=$Matches[1]}}
+ if($value){return $value.TrimStart('0')};return ''
+}
 try {
  $preferencesPath=Join-Path $env:LOCALAPPDATA 'ChurchSongLibrary/media-preferences.json'
  $preferences=[pscustomobject]@{folder='';files=@{}}
  if(Test-Path -LiteralPath $preferencesPath){try{$preferences=Read-Json $preferencesPath}catch{}}
  $remembered=@{};if($preferences.files){foreach($prop in $preferences.files.PSObject.Properties){$remembered[$prop.Name]=$prop.Value}}
- # Read only the configured library; never write into FreeShow's own Shows directory.
+ # Read first; overwrite only after all choices and media resolution succeed.
  if(!$ShowsFolder){foreach($configName in @('settings.json','config.json')){
   $configPath=Join-Path $env:APPDATA ('FreeShow/'+$configName)
   if(Test-Path -LiteralPath $configPath){try{$config=Read-Json $configPath;if($config.dataPath){$candidate=Join-Path $config.dataPath 'Shows';if(Test-Path -LiteralPath $candidate -PathType Container){$ShowsFolder=$candidate;break}}}catch{}}
@@ -20,8 +26,8 @@ try {
  $library=@();$problems=@();$report=@('來源歌曲庫：'+$ShowsFolder)
  foreach($file in Get-ChildItem -LiteralPath $ShowsFolder -Filter '*.show' -File){
   try{$raw=Read-Json $file.FullName;if($raw -isnot [array] -or $raw.Count -ne 2 -or $raw[0] -isnot [string] -or !$raw[1].name){throw '缺少歌曲 ID 或名稱'}
-   $library+=,[pscustomobject]@{Id=$raw[0];Show=$raw[1];File=$file.FullName;Title=(Song-Title $raw[1].name)}
-  }catch{$problems+='無法讀取歌曲，請先修復或移出歌曲庫：'+$file.Name}
+   $library+=,[pscustomobject]@{Id=$raw[0];Show=$raw[1];File=$file.FullName;Title=(Song-Title $raw[1].name);Number=(Song-Number $raw[1]);Hash=[Convert]::ToBase64String([IO.File]::ReadAllBytes($file.FullName))}
+  }catch{$problems+='無法讀取歌曲，請先修復或移出歌曲庫：'+$file.Name+'：'+$_.Exception.Message}
  }
  if($problems.Count){throw ($problems -join "`r`n")}
  $projectFiles=@(Get-ChildItem -LiteralPath $PackageFolder -Filter '*.project' -File)
@@ -32,13 +38,23 @@ try {
   if($reference.type -ne 'show'){$references+=,$reference;continue}
   $source=$data.shows.PSObject.Properties[$reference.id].Value
   if(!$source){throw ('歌單缺少歌曲內容：'+$reference.id)}
-  # Identity wins; otherwise use exact display name, then a unique title without its catalog prefix.
-  $matches=@($library | Where-Object {$_.Id -eq $reference.id})
-  if(!$matches.Count){$matches=@($library | Where-Object {$_.Show.name -ieq $source.name})}
-  if(!$matches.Count){$title=Song-Title $source.name;$matches=@($library | Where-Object {$_.Title -eq $title})}
-  if($matches.Count -gt 1){$problems+=('歌曲同名多個，請先在 FreeShow 整理：'+$source.name+"`r`n"+($matches.File -join "`r`n"));continue}
+  $number=Song-Number $source
+  if($number){$matches=@($library | Where-Object {$_.Number -eq $number})}
+  else{$matches=@($library | Where-Object {$_.Id -eq $reference.id})}
+  if($matches.Count -gt 1){$problems+=('相同編號有多個歌曲檔，請先在 FreeShow 整理：'+$source.name+"`r`n"+($matches.File -join "`r`n"));continue}
   if($matches.Count -eq 1){
    $local=$matches[0];$reference.id=$local.Id;$reference.name=$local.Show.name
+   $choice='No'
+   if($NonInteractive -and $ExistingAction -eq 'Overwrite'){$choice='Yes'}
+   elseif(!$NonInteractive){$choice=[Windows.Forms.MessageBox]::Show("找到相同編號：$($local.Show.name)`r`n下載版本：$($source.name)`r`n`r`n是否覆蓋本機歌曲？`r`n是：備份後使用下載版本。`r`n否：沿用本機歌曲加入專案。`r`n取消：停止，尚未更改歌曲。",'歌曲編號配對','YesNoCancel','Question')}
+   if($choice -eq 'Cancel'){throw '已取消，未修改歌曲'}
+   if($choice -eq 'Yes'){
+    # Keep the local identity and name so FreeShow does not create a numbered duplicate.
+    $source.name=$local.Show.name;$reference.layout=$source.settings.activeLayout
+    $missing[$local.Id]=$source;$overwrites+=,$local
+    $report+='覆蓋本機歌曲（保留本機 ID 與名稱）：'+$local.Show.name
+    $references+=,$reference;continue
+   }
    $layout=$local.Show.settings.activeLayout
    if(!$layout -or !$local.Show.layouts.PSObject.Properties[$layout]){$layout=@($local.Show.layouts.PSObject.Properties.Name)[0]}
    if(!$layout){throw ('本機歌曲沒有可用版面：'+$source.name)}
@@ -80,16 +96,29 @@ try {
  if($problems.Count){throw ($problems -join "`r`n`r`n")}
  foreach($key in $mapping.Keys){$serialized=$serialized.Replace(('"'+$key+'"'),(ConvertTo-Json -InputObject $mapping[$key] -Compress))}
  $data=$serialized|ConvertFrom-Json
+ if($overwrites.Count -and (Get-Process -Name FreeShow -ErrorAction SilentlyContinue)){throw '請先儲存並完全關閉 FreeShow，再執行 start.cmd，以免覆蓋後又被舊內容寫回。'}
+ foreach($local in $overwrites){if([Convert]::ToBase64String([IO.File]::ReadAllBytes($local.File)) -ne $local.Hash){throw ('歌曲在配對期間被修改，請重新執行：'+$local.Show.name)}}
  if($VideoFolder -and !$NonInteractive){New-Item -ItemType Directory -Force -Path (Split-Path $preferencesPath) | Out-Null;Save-Json $preferencesPath @{folder=$VideoFolder;files=$remembered}}
  $output=Join-Path $PackageFolder ('matched-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
  New-Item -ItemType Directory -Path $output | Out-Null
  $projectPath=Join-Path $output $projectFiles[0].Name
  Save-Json $projectPath $data
  foreach($property in $data.shows.PSObject.Properties){$safeName=$property.Value.name -replace '[<>:"/\\|?*]','_';Save-Json (Join-Path $output ($safeName+'.show')) @($property.Name,$property.Value)}
- $report+="使用本機 $usedExisting 首；新增 $($missing.Count) 首。請匯入 .project；已存在歌曲不會被覆蓋。"
+ if($overwrites.Count){
+  $backupFolder=Join-Path $output 'original-backup';New-Item -ItemType Directory -Path $backupFolder | Out-Null
+  foreach($local in $overwrites){Copy-Item -LiteralPath $local.File -Destination (Join-Path $backupFolder ([IO.Path]::GetFileName($local.File)))}
+  foreach($local in $overwrites){$written+=,$local;Save-Json $local.File @($local.Id,$data.shows.PSObject.Properties[$local.Id].Value)}
+ }
+ $report+="沿用本機 $usedExisting 首；覆蓋 $($overwrites.Count) 首；新增 $($missing.Count-$overwrites.Count) 首。請匯入 .project；覆蓋前原檔在 original-backup。"
  [IO.File]::WriteAllLines((Join-Path $output '配對結果.txt'),$report,[Text.UTF8Encoding]::new($true))
  if($NonInteractive){Write-Output $output;exit 0}
  [Windows.Forms.MessageBox]::Show(($report -join "`r`n")+"`r`n`r`n輸出：$output",'歌曲與影片配對完成')|Out-Null
  # Let the installed .project association open FreeShow; fallback keeps the ready-to-import file accessible.
  try{Start-Process -FilePath $projectPath}catch{Start-Process explorer.exe -ArgumentList ('"'+$output+'"')}
-} catch {if($NonInteractive){Write-Error $_.Exception.Message;exit 1};[Windows.Forms.MessageBox]::Show($_.Exception.Message,'未產生匯入檔')|Out-Null;exit 1}
+} catch {
+ $failure=$_;foreach($local in $written){Copy-Item -LiteralPath (Join-Path $backupFolder ([IO.Path]::GetFileName($local.File))) -Destination $local.File -Force}
+ $log=Join-Path $PackageFolder 'match-error.txt'
+ [IO.File]::WriteAllText($log,($failure | Out-String)+"`r`n"+$failure.ScriptStackTrace,[Text.UTF8Encoding]::new($true))
+ if($NonInteractive){Write-Error $failure.Exception.Message;exit 1}
+ [Windows.Forms.MessageBox]::Show($failure.Exception.Message+"`r`n`r`n錯誤記錄：$log",'配對未完成')|Out-Null;exit 1
+}

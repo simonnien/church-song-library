@@ -43,7 +43,7 @@ export async function exportLocalMediaPack(songs:Song[],options:Options,info:Wor
  zip.file('start.cmd','@echo off\r\npowershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0match-videos.ps1"\r\npause\r\n');
  zip.file('media-map.json',JSON.stringify(map));
  zip.file('敬拜資訊.txt',worshipText(songs,info));
- zip.file('使用說明.txt','1. 將 ZIP 完整解壓縮到要播放的 Windows 電腦。\r\n2. 執行 start.cmd，工具先讀取 FreeShow 歌曲庫；找不到位置時請選 Shows 資料夾。已有歌曲直接引用，只有缺少的才使用下載 .show。\r\n3. 工具會記住影片資料夾，優先搜尋 D:\\FreeShow\\video。缺少影片或同名多個時可手動指定，下一次會記住配對。歌曲同名多個仍會停止，避免選錯歌。\r\n4. 工具會嘗試開啟 matched-... 中的 .project；若未開啟，請在 FreeShow 匯入它。配對結果.txt 會列出沿用與新增歌曲。不要匯入根目錄尚未配對的檔案。\r\n執行前先儲存 FreeShow 修改。沿用本機歌曲不覆蓋歌詞、版面與影片；只新增歌單缺少的歌曲。不移動或刪除影片。');
+ zip.file('使用說明.txt','1. 將 ZIP 完整解壓縮到要播放的 Windows 電腦。\r\n2. 執行 start.cmd，工具先讀取 FreeShow 歌曲庫；找不到位置時請選 Shows 資料夾。依編號找歌曲；找到時詢問是否覆蓋。是：備份並覆蓋；否：沿用本機歌曲；取消：停止。缺少時使用下載 .show。\r\n3. 工具會記住影片資料夾，優先搜尋 D:\\FreeShow\\video。缺少影片或同名多個時可手動指定，下一次會記住配對。相同編號有多個本機檔案時會停止，避免選錯歌。\r\n4. 工具會嘗試開啟 matched-... 中的 .project；若未開啟，請在 FreeShow 匯入它。配對結果.txt 會列出沿用、覆蓋與新增歌曲。失敗時請查看 match-error.txt。不要匯入根目錄尚未配對的檔案。\r\n執行前先儲存並完全關閉 FreeShow。覆蓋保留本機 ID 與名稱，原檔備份在 matched-.../original-backup；選否則保留本機內容。不移動或刪除影片。');
  download(planName(info)+'-本機歌曲影片配對.zip',await zip.generateAsync({type:'blob'},zipProgress(report)),'application/zip');
 }
 

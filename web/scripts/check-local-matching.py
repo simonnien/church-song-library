@@ -12,8 +12,8 @@ with tempfile.TemporaryDirectory(prefix='song-match-') as tmp:
   for sid,title in ids:
    s=show(title,media={'bg':{'path':'__VIDEO__'}});shows[sid]=s;refs.append({'type':'show','id':sid,'name':title,'layout':'default'});write(p/(title+'.show'),[sid,s])
   write(p/'plan.project',{'project':{'name':'test','shows':refs},'shows':shows});write(p/'media-map.json',[{'placeholder':'__VIDEO__','filename':'test.mp4'}]);return p
- def run(p,ok=True):
-  r=subprocess.run(['powershell','-NoProfile','-File',str(script),'-ShowsFolder',str(lib),'-PackageFolder',str(p),'-VideoFolder',str(videos),'-NonInteractive'],capture_output=True)
+ def run(p,ok=True,action='Keep'):
+  r=subprocess.run(['powershell','-NoProfile','-File',str(script),'-ShowsFolder',str(lib),'-PackageFolder',str(p),'-VideoFolder',str(videos),'-NonInteractive','-ExistingAction',action],capture_output=True)
   assert (r.returncode==0)==ok,r.stderr.decode(errors='replace')
   outputs=list(p.glob('matched-*'));assert len(outputs)==(1 if ok else 0)
   return json.loads((outputs[0]/'plan.project').read_text(encoding='utf-8')) if ok else None
@@ -29,5 +29,19 @@ with tempfile.TemporaryDirectory(prefix='song-match-') as tmp:
  fixture=json.loads((p/'plan.project').read_text(encoding='utf-8'));fixture['project']['shows'].append({'type':'video','id':'__VIDEO__','name':'test'});fixture['media']={'__VIDEO__':{'speed':'1'}};write(p/'plan.project',fixture);write(p/'media-map.json',[{'placeholder':'__VIDEO__','filename':'test.mp4','bytes':1}])
  duplicate_folder=videos/'other-quality';duplicate_folder.mkdir();(duplicate_folder/'test.mp4').write_bytes(b'longer')
  data=run(p);assert data['shows']=={};assert data['project']['shows'][-1]['id'] in data['media'];assert Path(data['project']['shows'][-1]['id']).read_bytes()==b'x'
+ p=package('same-number-new-title',[('new-id','1-Renamed')]);data=run(p)
+ assert data['project']['shows'][0]['id']=='old-random-id'
+ assert (lib/'alpha.show').read_bytes()==before
+ p=package('overwrite',[('new-id','001-Renamed')]);write(p/'media-map.json',[{'placeholder':'__VIDEO__','filename':'test.mp4','bytes':1}]);data=run(p,action='Overwrite')
+ updated=json.loads((lib/'alpha.show').read_text(encoding='utf-8'))
+ assert updated[0]=='old-random-id' and updated[1]['name']=='001-Alpha'
+ assert updated[1]['settings']['activeLayout']=='default'
+ assert Path(updated[1]['media']['bg']['path']).is_file()
+ assert data['shows']['old-random-id']==updated[1]
+ assert next(p.glob('matched-*/original-backup/alpha.show')).read_bytes()==before
+ before=(lib/'alpha.show').read_bytes()
+ p=package('failed-video',[('new-id','001-Renamed')]);write(p/'media-map.json',[{'placeholder':'__VIDEO__','filename':'absent.mp4'}]);run(p,False,action='Overwrite')
+ assert (lib/'alpha.show').read_bytes()==before
+ assert (p/'match-error.txt').is_file()
  write(lib/'duplicate.show',['another-id',local]);run(package('ambiguous',[('church_song_library_1','001-Alpha')]),False)
  print('PASS: local song reuse, missing-song fallback, local layout preservation, video matching, no overwrite, all-existing and ambiguous-name rejection')
