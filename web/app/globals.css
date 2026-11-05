@@ -71,3 +71,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .plan-song-order button:hover:not(:disabled),.song-setting-actions button:hover:not(:disabled){background:#eaf2e7;border-color:#6b977c}
 @media(min-width:1001px){.workspace{height:calc(100dvh - 154px)}}
 @media(max-width:640px){.playlist-sync-bar{padding:10px 14px;gap:8px}.sync-status{flex-basis:100%;font-size:12px}.playlist-sync-bar .primary,.playlist-sync-bar .secondary{flex:1;min-width:135px;font-size:13px}.share-modal{padding:20px 16px max(24px,env(safe-area-inset-bottom));width:100%}.share-modal h2{font-size:22px}.share-card{padding:16px}.share-card input{font-size:16px}.settings-modal input:not([type=checkbox]):not([type=radio]):not([type=color]),.settings-modal select{font-size:16px}}
+
+.export-progress-overlay{position:fixed;inset:0;z-index:10000;background:rgba(16,35,29,.5);display:flex;align-items:center;justify-content:center;padding:20px}
+.export-progress-card{width:min(440px,100%);background:#fff;color:#183e32;border-radius:20px;padding:28px;box-shadow:0 20px 60px #0003;overflow-wrap:anywhere}
+.export-progress-card h2{margin:0 0 16px;font-size:22px}.export-progress-card p{margin:0 0 18px}.export-progress-card small{display:block;margin-top:12px;color:#50645b}
+.export-progress-track{height:12px;border-radius:99px;background:#e1eae5;overflow:hidden}.export-progress-track span{display:block;height:100%;background:#28634f;border-radius:99px;transition:width .2s}.export-progress-track .indeterminate{width:35%;animation:export-loading 1.3s ease-in-out infinite}
+@keyframes export-loading{from{transform:translateX(-100%)}to{transform:translateX(390%)}}@media(prefers-reduced-motion:reduce){.export-progress-track .indeterminate{animation:none;width:100%;opacity:.65}}

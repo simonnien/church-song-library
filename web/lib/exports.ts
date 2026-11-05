@@ -1,3 +1,4 @@
+import {type ReportProgress,yieldForPaint} from './export-progress';
 import videoTiming from './video-timing.json';
 import {backgroundById,backgroundUrl,exportColor,SITE_ORIGIN} from './backgrounds';
 import type {Song,Options} from './model';
@@ -108,14 +109,15 @@ export function showFile(song:Song,options:Options){
  const parent=parents.get(p.block);if(!parent){const g=groupColor(p.group);slide.group=p.group;slide.color=g.color;slide.children=[];if(g.key)slide.globalGroup=g.key;const entry={id,children:{}};layout.push(entry);parents.set(p.block,{id,entry});}else{slides[parent.id].children.push(id);parent.entry.children[id]={};}slides[id]=slide;
  });const bg=backgroundById(options.backgroundId);const media:any={};if(bg){media.background={name:bg.name,path:SITE_ORIGIN+backgroundUrl(bg.id),type:'video',muted:true,loop:true};for(const entry of layout){entry.background='background';for(const child of Object.values(entry.children) as any[])child.background='background';}}const now=Date.now();return ['church_song_library_'+Number(song.id),{name:filename(song),category:'song',settings:{activeLayout:'default',template:null},timestamps:{created:Math.floor(now/1000),modified:now,used:null},meta:{number:song.id,title:song.title},slides,layouts:{default:{name:'預設',notes:song.youtube,slides:layout}},media}];
 }
-export async function exportPptx(song:Song,options:Options,returnBlob=false){
- const {default:PptxGenJS}=await import('pptxgenjs');const bg=backgroundById(options.backgroundId);let video:Blob|null=null;if(bg){const r=await fetch(backgroundUrl(bg.id));if(!r.ok||!r.headers.get('content-type')?.includes('video/'))throw Error('背景影片下載失敗，未匯出不完整檔案');video=await r.blob();}const cover=video?await videoPoster(video):'';const pptx=new PptxGenJS(),pages=pagesFor(song,options);
+export async function exportPptx(song:Song,options:Options,returnBlob=false,report?:ReportProgress){
+ report?.({label:'正在準備 PowerPoint'});await yieldForPaint();
+ const {default:PptxGenJS}=await import('pptxgenjs');const bg=backgroundById(options.backgroundId);let video:Blob|null=null;if(bg){report?.({label:'正在下載背景影片'});const r=await fetch(backgroundUrl(bg.id));if(!r.ok||!r.headers.get('content-type')?.includes('video/'))throw Error('背景影片下載失敗，未匯出不完整檔案');video=await r.blob();}report?.({label:'正在建立投影片'});await yieldForPaint();const cover=video?await videoPoster(video):'';const pptx=new PptxGenJS(),pages=pagesFor(song,options);
  pptx.defineLayout({name:'LYRICS',width:pages[0].width/144,height:7.5});pptx.layout='LYRICS';pptx.title=song.title;pptx.subject='教會歌曲資料庫';
  pages.forEach(p=>{const s=pptx.addSlide();s.background={color:'000000'};if(video)s.addMedia({type:'video',data:'video/mp4;base64,AAAA',extn:'mp4',objectName:'背景影片',x:0,y:0,w:p.width/144,h:7.5,cover});
  p.lines.forEach((line,i)=>s.addText(line,{x:24/144,y:(24+i*p.size*1.4)/144,w:(p.width-48)/144,h:p.size*1.4/144,fontFace:'Microsoft JhengHei',fontSize:p.size/2,bold:true,color:exportColor(options.textColor).slice(1),align:'center',valign:'middle',margin:0,wrap:false,breakLine:false}));
  if(p.title)s.addText(p.title,{x:24/144,y:1020/144,w:(p.width-220)/144,h:40/144,fontFace:'Microsoft JhengHei',fontSize:Math.min(14,14*(p.width-220)/Math.max(1,measured(p.title,28))),color:exportColor(options.textColor).slice(1),margin:0,wrap:false});
  if(p.number)s.addText(p.number,{x:(p.width-180)/144,y:1020/144,w:156/144,h:40/144,fontSize:14,color:exportColor(options.textColor).slice(1),align:'right',margin:0,wrap:false});if(song.youtube)s.addNotes(song.youtube);
- });const blob=video?await exportVideoPptx(pptx,video):await pptx.write({outputType:'blob'}) as Blob;if(returnBlob)return blob;download(filename(song)+'.pptx',blob);
+ });report?.({label:'正在封裝 PowerPoint'});await yieldForPaint();const blob=video?await exportVideoPptx(pptx,video):await pptx.write({outputType:'blob'}) as Blob;if(returnBlob)return blob;download(filename(song)+'.pptx',blob);
 }
 
 
