@@ -18,13 +18,14 @@ export function measurePrintText(text:string,size:number){
  return width;
 }
 export function layoutPrintBlock(text:string,prefix='',measure:Measure=measurePrintText,width=PRINT_WIDTH):PrintLine[]{
- const lines=text.replace(/\r\n?/g,'\n').split('\n').map(s=>s.replace(/[^\S\n]+/gu,' ').trim());
+ const lines=text.replace(/\r\n?/g,'\n').split('\n').map(s=>s.replace(/[^\S\n]+/gu,' ').trim()).filter(Boolean);
  if(lines.length)lines[0]=prefix+lines[0];
  const result:PrintLine[]=[];
  const fits=(s:string)=>measure(s,PRINT_SIZE)<=width;
  for(let i=0;i<lines.length;i++){
   let line=lines[i];
-  // Preserve empty lines and section boundaries. Merge only complete pairs.
+  // Empty lines within a block do not create gaps in large print.
+  // Section spacing is added by the document builder. Merge complete pairs.
   if(line&&lines[i+1]&&fits(line+'  '+lines[i+1])){line+='  '+lines[++i]}
   if(fits(line)){result.push({text:line,size:PRINT_SIZE});continue}
   // Wrap at existing spaces before considering any smaller font.
