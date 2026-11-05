@@ -7,7 +7,7 @@ export type WorshipInfo={id:string;date:string;meeting:string;note:string;respon
 export const planName=(info:WorshipInfo)=>`${info.date||'未定日期'}-${info.meeting||'敬拜歌單'}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_');
 export function worshipText(songs:Song[],info:WorshipInfo){
  const date=info.date?info.date.slice(5).replace('-','/'):'';
- let index=0;return `${date}${info.meeting||'敬拜'}詩歌：${info.note?'（'+info.note+'）':''}\n\n`+songs.map(s=>`${(info.responseIds??[info.responseId]).includes(s.id)?'回應：':++index+'.'}${s.title}${(info.responseIds??[info.responseId]).includes(s.id)?'':'：'}\n${s.youtube||'（尚未提供 YouTube 連結）'}`).join('\n\n');
+ let index=0;return `${date}${info.meeting||'敬拜'}詩歌：${info.note?'（'+info.note+'）':''}\n\n`+songs.map(s=>`${(info.responseIds??[info.responseId]).includes(s.id)?'回應：':++index+'.'}${s.id}-${s.title}${(info.responseIds??[info.responseId]).includes(s.id)?'':'：'}\n${s.youtube||'（尚未提供 YouTube 連結）'}`).join('\n\n');
 }
 export function projectData(songs:Song[],options:Options,info:WorshipInfo,portable=false,individual:SongOptions={}){
  if(!songs.length)throw Error('請先加入歌曲');
