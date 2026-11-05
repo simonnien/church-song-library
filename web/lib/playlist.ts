@@ -4,7 +4,8 @@ import {optionsFor,type SongOptions} from './playlist-options';
 import {showFile,filename,download,exportPptx} from './exports';
 import {backgroundById,backgroundUrl,SITE_ORIGIN} from './backgrounds';
 export type WorshipInfo={id:string;date:string;meeting:string;note:string;responseId:string;responseIds?:string[]};
-export const planName=(info:WorshipInfo)=>`${info.date||'未定日期'}-${info.meeting||'敬拜歌單'}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_');
+export const projectName=(info:WorshipInfo)=>`${/^\d{4}-\d{2}-\d{2}$/.test(info.date)?info.date.slice(2).replace(/-/g,'/'):info.date||'未定日期'} ${info.meeting.trim()||'敬拜歌單'}`;
+export const planName=(info:WorshipInfo)=>projectName(info).replace(/\//g,'-').replace(/[<>:"\\|?*\x00-\x1f]/g,'_');
 export function worshipText(songs:Song[],info:WorshipInfo){
  const date=info.date?info.date.slice(5).replace('-','/'):'';
  let index=0;return `${date}${info.meeting||'敬拜'}詩歌：${info.note?'（'+info.note+'）':''}\n\n`+songs.map(s=>`${(info.responseIds??[info.responseId]).includes(s.id)?'回應：':++index+'.'}${s.id}-${s.title}${(info.responseIds??[info.responseId]).includes(s.id)?'':'：'}\n${s.youtube||'（尚未提供 YouTube 連結）'}`).join('\n\n');
@@ -17,7 +18,7 @@ export function projectData(songs:Song[],options:Options,info:WorshipInfo,portab
   shows[key]=show;refs.push({id:key,name:show.name,type:'show',layout:'default',notes:(info.responseIds??[info.responseId]).includes(song.id)?'回應詩歌':''});
  }
  for(const song of songs){const bg=backgroundById(optionsFor(song.id,options,individual).backgroundId);if(!bg)continue;const fullPath=portable?`church-song-library-media/${bg.id}.mp4`:SITE_ORIGIN+backgroundUrl(bg.id);if(media[fullPath])continue;refs.push({id:fullPath,name:bg.name,type:'video',loop:true,muted:true});media[fullPath]={speed:'1',filter:'',fit:'cover',videoType:'background'};}
- return {project:{id:'church_playlist_'+info.id,name:planName(info),parent:'/',created:Date.now(),shows:refs,notes:worshipText(songs,info)},shows,files,overlays:{},effects:{},actions:{},media,categories:{song:{name:'歌曲',icon:null}}};
+ return {project:{id:'church_playlist_'+info.id,name:projectName(info),parent:'/',created:Date.now(),shows:refs,notes:worshipText(songs,info)},shows,files,overlays:{},effects:{},actions:{},media,categories:{song:{name:'歌曲',icon:null}}};
 }
 export async function projectBlob(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){
  const data=projectData(songs,options,info,true,individual);
