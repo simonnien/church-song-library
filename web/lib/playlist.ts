@@ -24,8 +24,24 @@ export async function projectBlob(songs:Song[],options:Options,info:WorshipInfo,
  const data=projectData(songs,options,info,true,individual);
  if(!data.files.length)return new Blob([JSON.stringify(data)],{type:'application/octet-stream'});
  const {default:JSZip}=await import('jszip');const zip=new JSZip();zip.file('data.json',JSON.stringify(data));
- for(const [i,path] of data.files.entries()){report?.({label:`正在下載背景影片 ${i+1} / ${data.files.length}`});await yieldForPaint();const name=path.split('/').pop()!,id=name.slice(0,-4);const r=await fetch(backgroundUrl(id));if(!r.ok||!r.headers.get('content-type')?.includes('video/'))throw Error('背景影片下載失敗，未產生不完整歌單');zip.file(name,await r.arrayBuffer());}
+ for(const [i,path] of data.files.entries()){report?.({label:`正在下載背景影片 ${i+1} / ${data.files.length}`});await yieldForPaint();const name=path.split('/').pop()!,id=name.slice(0,-4);zip.file(name,await downloadBackground(id,report));}
  return zip.generateAsync({type:'blob',compression:'STORE'},zipProgress(report));
+}
+export async function downloadBackground(id:string,report?:ReportProgress){
+ const bg=backgroundById(id);if(!bg)throw Error('找不到背景影片');
+ for(let attempt=1;attempt<=3;attempt++){
+  try{
+   const r=await fetch(backgroundUrl(id)+'?download=1',{cache:'no-store'});
+   if(r.status!==200||!r.headers.get('content-type')?.includes('video/')){await r.body?.cancel();throw Error('影片回應不完整');}
+   const bytes=await r.arrayBuffer();
+   if(bytes.byteLength!==bg.bytes)throw Error(`影片大小不符：${bytes.byteLength} / ${bg.bytes}`);
+   return bytes;
+  }catch(error){
+   if(attempt===3)throw Error(`${bg.name} 下載不完整，請重試；未產生不完整專案。`);
+   report?.({label:`${bg.name} 下載中斷，正在重試 ${attempt} / 2`});
+  }
+ }
+ throw Error('影片下載失敗');
 }
 export async function exportProject(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){download(planName(info)+'.project',await projectBlob(songs,options,info,individual,report));}
 export async function exportSongZip(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){
