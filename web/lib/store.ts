@@ -13,6 +13,17 @@ async function drive(action:string,data:object={}) {
  if(!result.ok){if(result.conflict)throw new Conflict();throw Error(result.error||'Google Drive 同步失敗');}return result;
 }
 export class Conflict extends Error {constructor(){super('歌曲已在其他裝置更新。請重新載入後再編輯；畫面上的修改仍保留。')}}
+// D1 already stores validated JSON. Keep it serialized for the read-only listing
+// instead of parsing and serializing every lyric on every page load.
+let initialJson:Map<string,string>|undefined;
+export async function listSongsJson():Promise<string>{
+ if(driveReady())return JSON.stringify(await listSongs());
+ if(!initialJson)initialJson=new Map((initial as Song[]).map(song=>[song.id,JSON.stringify(song)]));
+ const rows=await config().DB.prepare('SELECT id,data FROM songs').all<{id:string;data:string}>();
+ const merged=new Map(initialJson);
+ for(const row of rows.results)merged.set(row.id,row.data);
+ return '['+[...merged].sort((a,b)=>Number(a[0])-Number(b[0])).map(([,data])=>data).join(',')+']';
+}
 export async function listSongs():Promise<Song[]> {
  if(driveReady()){const r=await drive('read');if(!Array.isArray(r.songs))throw Error('Google Drive 資料格式不正確');return r.songs;}
  const rows=await config().DB.prepare('SELECT data FROM songs').all<{data:string}>();
