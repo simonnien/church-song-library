@@ -29,19 +29,23 @@ export async function projectBlob(songs:Song[],options:Options,info:WorshipInfo,
 }
 export async function downloadBackground(id:string,report?:ReportProgress){
  const bg=backgroundById(id);if(!bg)throw Error('找不到背景影片');
- for(let attempt=1;attempt<=3;attempt++){
-  try{
-   const r=await fetch(backgroundUrl(id)+'?download=1',{cache:'no-store'});
-   if(r.status!==200||!r.headers.get('content-type')?.includes('video/')){await r.body?.cancel();throw Error('影片回應不完整');}
-   const bytes=await r.arrayBuffer();
-   if(bytes.byteLength!==bg.bytes)throw Error(`影片大小不符：${bytes.byteLength} / ${bg.bytes}`);
-   return bytes;
-  }catch(error){
-   if(attempt===3)throw Error(`${bg.name} 下載不完整，請重試；未產生不完整專案。`);
-   report?.({label:`${bg.name} 下載中斷，正在重試 ${attempt} / 2`});
+ const parts:ArrayBuffer[]=[];const chunkSize=4*1024*1024;
+ for(let start=0;start<bg.bytes;start+=chunkSize){
+  const end=Math.min(start+chunkSize,bg.bytes)-1;
+  for(let attempt=1;attempt<=3;attempt++){
+   try{
+    const r=await fetch(backgroundUrl(id)+'?download=1',{cache:'no-store',headers:{Range:`bytes=${start}-${end}`}});
+    if(r.status!==206||r.headers.get('content-range')!==`bytes ${start}-${end}/${bg.bytes}`||!r.headers.get('content-type')?.includes('video/')){await r.body?.cancel();throw Error('影片分段回應不完整');}
+    const bytes=await r.arrayBuffer();
+    if(bytes.byteLength!==end-start+1)throw Error('影片分段大小不符');
+    parts.push(bytes);report?.({label:`正在下載 ${bg.name}：${Math.round((end+1)/bg.bytes*100)}%`});break;
+   }catch(error){
+    if(attempt===3)throw Error(`${bg.name} 下載不完整，請重試；未產生不完整專案。`);
+    report?.({label:`${bg.name} 分段下載中斷，正在重試 ${attempt} / 2`});
+   }
   }
  }
- throw Error('影片下載失敗');
+ return new Blob(parts,{type:'video/mp4'}).arrayBuffer();
 }
 export async function exportProject(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){download(planName(info)+'.project',await projectBlob(songs,options,info,individual,report));}
 export async function exportSongZip(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){
