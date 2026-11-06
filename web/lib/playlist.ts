@@ -23,8 +23,18 @@ export function projectData(songs:Song[],options:Options,info:WorshipInfo,portab
 export async function projectBlob(songs:Song[],options:Options,info:WorshipInfo,individual:SongOptions={},report?:ReportProgress){
  const data=projectData(songs,options,info,true,individual);
  if(!data.files.length)return new Blob([JSON.stringify(data)],{type:'application/octet-stream'});
- const {default:JSZip}=await import('jszip');const zip=new JSZip();zip.file('data.json',JSON.stringify(data));
- for(const [i,path] of data.files.entries()){report?.({label:`正在下載背景影片 ${i+1} / ${data.files.length}`});await yieldForPaint();const name=path.split('/').pop()!,id=name.slice(0,-4);zip.file(name,await downloadBackground(id,report));}
+ const {default:JSZip}=await import('jszip');const zip=new JSZip();let serialized=JSON.stringify(data);
+ for(const [i,path] of data.files.entries()){
+  report?.({label:`正在下載背景影片 ${i+1} / ${data.files.length}`});await yieldForPaint();
+  const id=path.split('/').pop()!.slice(0,-4),bytes=await downloadBackground(id,report);
+  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const name=`${id}-${digest}.mp4`,verifiedPath=`church-song-library-verified/${name}`;
+  // FreeShow skips extraction when its imported path already exists. Content-addressed
+  // paths avoid reusing partial videos imported by older exports, on any computer.
+  serialized=serialized.split(JSON.stringify(path)).join(JSON.stringify(verifiedPath));
+  zip.file(name,bytes);
+ }
+ zip.file('data.json',serialized);
  return zip.generateAsync({type:'blob',compression:'STORE'},zipProgress(report));
 }
 export async function downloadBackground(id:string,report?:ReportProgress){
