@@ -5,6 +5,7 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOpti
 if(file.endsWith(path.sep+'exports.ts')){mod.exports.download=(name,blob)=>downloads.push({name,blob});mod.exports.exportPptx=async(song,options)=>{pptxOptions.push({id:song.id,options});return new Blob(['test-pptx'])};}return mod.exports;}
 (async()=>{
 const {DEFAULT_OPTIONS:D,optionsFor,readSongOptions,optionSummary}=load('lib/playlist-options.ts'),{BACKGROUNDS}=load('lib/backgrounds.ts'),api=load('lib/playlist.ts');
+const first=BACKGROUNDS.find(b=>b.ratio==='32:9'),second=BACKGROUNDS.find(b=>b.ratio==='16:9'&&b.sourceId!==first.sourceId);BACKGROUNDS.splice(0,BACKGROUNDS.length,first,second,...BACKGROUNDS.filter(b=>b!==first&&b!==second));
 for(const bg of BACKGROUNDS)bg.bytes=10;
 mediaMode='short';mediaAttempts=0;await assert.rejects(()=>api.downloadBackground(BACKGROUNDS[0].id),/下載不完整/);assert.equal(mediaAttempts,6);
 mediaMode='retry';mediaAttempts=0;assert.equal((await api.downloadBackground(BACKGROUNDS[0].id)).byteLength,10);assert.equal(mediaAttempts,4);assert(requests.at(-1).startsWith('/api/backgrounds/'));mediaMode='ok';
