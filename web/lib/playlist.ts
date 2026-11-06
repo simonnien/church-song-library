@@ -29,20 +29,20 @@ export async function projectBlob(songs:Song[],options:Options,info:WorshipInfo,
 }
 export async function downloadBackground(id:string,report?:ReportProgress){
  const bg=backgroundById(id);if(!bg)throw Error('找不到背景影片');
- const parts:ArrayBuffer[]=[];const chunkSize=4*1024*1024;
+ const parts:ArrayBuffer[]=[];const chunkSize=1024*1024;
  for(let start=0;start<bg.bytes;start+=chunkSize){
   const end=Math.min(start+chunkSize,bg.bytes)-1;
-  for(let attempt=1;attempt<=5;attempt++){
+  for(let attempt=1;attempt<=6;attempt++){
    try{
-    const url=attempt<=3?backgroundUrl(id)+'?download=1':`https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`;
+    const url=backgroundUrl(id)+`?download=1&part=${start}`;
     const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(60000),headers:{Range:`bytes=${start}-${end}`}});
-    if(r.status!==206||((attempt<=3||r.headers.get('content-range'))&&r.headers.get('content-range')!==`bytes ${start}-${end}/${bg.bytes}`)||!r.headers.get('content-type')?.includes('video/')){await r.body?.cancel();throw Error(`分段回應錯誤（HTTP ${r.status}）`);}
+    if(r.status!==206||r.headers.get('content-range')!==`bytes ${start}-${end}/${bg.bytes}`||!r.headers.get('content-type')?.includes('video/')){await r.body?.cancel();throw Error(`分段回應錯誤（HTTP ${r.status}）`);}
     const bytes=await r.arrayBuffer();
     if(bytes.byteLength!==end-start+1)throw Error('影片分段大小不符');
     parts.push(bytes);report?.({label:`正在下載 ${bg.name}：${Math.round((end+1)/bg.bytes*100)}%`});break;
    }catch(error){
-    if(attempt===5)throw Error(`${bg.name} 下載不完整：第 ${Math.floor(start/chunkSize)+1}/${Math.ceil(bg.bytes/chunkSize)} 段（位元組 ${start}–${end}）；${error instanceof Error?error.message:'網路連線中斷'}。請重試，未產生不完整專案。`);
-    report?.({label:`${bg.name} 分段下載中斷，${attempt>=3?'改從 Google Drive 補抓':'稍後重試'} ${attempt} / 4`});
+    if(attempt===6)throw Error(`${bg.name} 下載不完整：第 ${Math.floor(start/chunkSize)+1}/${Math.ceil(bg.bytes/chunkSize)} 段（位元組 ${start}–${end}）；${error instanceof Error?error.message:'網路連線中斷'}。請重試，未產生不完整專案。`);
+    report?.({label:`${bg.name} 分段下載中斷，稍後重試 ${attempt} / 5`});
     await new Promise(resolve=>setTimeout(resolve,1000*Math.min(attempt,3)));
    }
   }

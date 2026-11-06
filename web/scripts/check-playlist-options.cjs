@@ -6,8 +6,8 @@ if(file.endsWith(path.sep+'exports.ts')){mod.exports.download=(name,blob)=>downl
 (async()=>{
 const {DEFAULT_OPTIONS:D,optionsFor,readSongOptions,optionSummary}=load('lib/playlist-options.ts'),{BACKGROUNDS}=load('lib/backgrounds.ts'),api=load('lib/playlist.ts');
 for(const bg of BACKGROUNDS)bg.bytes=10;
-mediaMode='short';mediaAttempts=0;await assert.rejects(()=>api.downloadBackground(BACKGROUNDS[0].id),/下載不完整/);assert.equal(mediaAttempts,5);
-mediaMode='retry';mediaAttempts=0;assert.equal((await api.downloadBackground(BACKGROUNDS[0].id)).byteLength,10);assert.equal(mediaAttempts,4);assert(requests.at(-1).startsWith('https://drive.usercontent.google.com/'));mediaMode='ok';
+mediaMode='short';mediaAttempts=0;await assert.rejects(()=>api.downloadBackground(BACKGROUNDS[0].id),/下載不完整/);assert.equal(mediaAttempts,6);
+mediaMode='retry';mediaAttempts=0;assert.equal((await api.downloadBackground(BACKGROUNDS[0].id)).byteLength,10);assert.equal(mediaAttempts,4);assert(requests.at(-1).startsWith('/api/backgrounds/'));mediaMode='ok';
 requests.length=0;const songs=['001','002','003','004'].map(id=>({id,title:'Test '+id,youtube:'',blocks:[{type:'主歌',number:'1',text:'測試第一句\n測試第二句'}]})),info={id:'qa',date:'2026-10-21',meeting:'Test',note:'',responseId:''};
 const common={...D,textColor:'#00FF00',backgroundId:BACKGROUNDS[0].id},individual={'001':{...D},'002':{...D,ratio:'16:9',textColor:'#FFFF00',backgroundId:BACKGROUNDS[1].id}};
 assert.equal(D.ratio,'32:9');assert.equal(D.textColor,'#FFFFFF');assert.equal(D.backgroundId,'');
