@@ -85,3 +85,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .admin-modal .pastor-account button{margin:6px 6px 0 0;padding:7px 10px;border:1px solid #b78a2d;border-radius:7px;background:#ffedb9;color:#654600}
 .admin-modal .pastor-account button:hover:not(:disabled){background:#e8c56d}
 .admin-modal .pastor-account button:focus-visible{outline:2px solid #805a00;outline-offset:2px}
+
+.admin-modal .editor-accounts{list-style:none;padding:0;margin:12px 0;width:100%}
+.admin-modal .editor-accounts>.pastor-account{box-sizing:border-box;width:100%;margin:0 0 12px}
