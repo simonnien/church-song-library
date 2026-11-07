@@ -6,7 +6,9 @@ for(const ratio of ['16:9','32:9']){
 const scale=ratio==='32:9'?2:1;
 const [,show]=showFile({id:'275',number:275,title:'新酒',youtube:'',blocks:[{type:'主歌',number:1,text:'hey\n新酒澆灌帶下新鮮恩膏 說不盡的喜樂 充滿我'}]}, {ratio,showTitle:true,showPageNumbers:true,showFooterTitle:true,textColor:'#00FFCC',backgroundId:'1FfQHYWRgsiOKIEnSDUcPLNJSXTYe8V_1'});
 assert(show.media.background.loop&&show.media.background.muted);
-for(const entry of show.layouts.default.slides)assert.equal(entry.background,'background');
+assert.equal(show.layouts.default.slides[0].background,'background');
+for(const entry of show.layouts.default.slides.slice(1))assert.equal(entry.background,undefined);
+for(const entry of show.layouts.default.slides)for(const child of Object.values(entry.children))assert.equal(child.background,undefined);
 for(const slide of Object.values(show.slides)) for(const item of slide.items){
  assert(css(item.style,'left')+css(item.style,'width')<=1920,ratio+': text box exceeds FreeShow normalized canvas');
  assert(css(item.style,'top')+css(item.style,'height')<=1080,ratio+': footer exceeds canvas');
@@ -97,3 +99,11 @@ const unavoidable=pagesFor({...song,blocks:[{type:'主歌',number:1,text:'字'.r
 assert.equal(unavoidable[0].lines[0],'字'.repeat(80));
 assert(freeShowTextLayout(unavoidable[0].lines,'32:9').size<55);
 console.log('PASS: preserve template font by adding pages; shrink only an individually overlong source line');
+
+const [,firstOnly]=showFile({id:'999',title:'background test',blocks:[{type:'主歌',number:1,text:'A\n\n\nB'},{type:'副歌',number:1,text:'C\n\n\nD'}]},{ratio:'32:9',showTitle:false,backgroundId:'1FfQHYWRgsiOKIEnSDUcPLNJSXTYe8V_1'});
+const entries=firstOnly.layouts.default.slides;
+assert(entries.length>=2);
+assert(Object.keys(entries[0].children).length>0);
+assert.equal(entries[0].background,'background');
+assert.equal(entries.slice(1).filter(e=>e.background).length,0);
+assert.equal(entries.flatMap(e=>Object.values(e.children)).filter(e=>e.background).length,0);
