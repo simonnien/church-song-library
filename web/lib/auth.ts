@@ -36,4 +36,4 @@ export async function editor(allowPasswordChange=false){
 export function sameOrigin(request:Request){return request.headers.get('origin')===new URL(request.url).origin;}
 export function newToken(){return hex(crypto.getRandomValues(new Uint8Array(32)).buffer);}
 
-export async function isAdmin(){const name=await editor();return googleReady()?name===GOOGLE_ADMIN:name==='beersheba01'&&!!await passwordRecord('beersheba01')}
+export async function isAdmin(){const name=await editor();if(!name)return false;if(!googleReady())return name==='beersheba01'&&!!await passwordRecord('beersheba01');if(name===GOOGLE_ADMIN)return true;return !!await config().DB.prepare('SELECT email FROM google_editors WHERE email=? AND disabled=0 AND is_admin=1').bind(name).first()}
