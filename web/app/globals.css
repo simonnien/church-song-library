@@ -77,3 +77,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .export-progress-card h2{margin:0 0 16px;font-size:22px}.export-progress-card p{margin:0 0 18px}.export-progress-card small{display:block;margin-top:12px;color:#50645b}
 .export-progress-track{height:12px;border-radius:99px;background:#e1eae5;overflow:hidden}.export-progress-track span{display:block;height:100%;background:#28634f;border-radius:99px;transition:width .2s}.export-progress-track .indeterminate{width:35%;animation:export-loading 1.3s ease-in-out infinite}
 @keyframes export-loading{from{transform:translateX(-100%)}to{transform:translateX(390%)}}@media(prefers-reduced-motion:reduce){.export-progress-track .indeterminate{animation:none;width:100%;opacity:.65}}
+
+/* Pastor identity highlights the entire account card. */
+.editor-account{padding:12px 0;border-bottom:1px solid #ddd}
+.admin-modal .pastor-account{list-style:none;margin:10px 0;padding:16px;border:1px solid #c9a047;border-radius:12px;background:linear-gradient(120deg,#fff5d8,#f1d58f);color:#654600;box-shadow:0 2px 8px #9c70151a}
+.admin-modal .pastor-account strong,.admin-modal .pastor-account small{color:#654600}
+.admin-modal .pastor-account button{margin:6px 6px 0 0;padding:7px 10px;border:1px solid #b78a2d;border-radius:7px;background:#ffedb9;color:#654600}
+.admin-modal .pastor-account button:hover:not(:disabled){background:#e8c56d}
+.admin-modal .pastor-account button:focus-visible{outline:2px solid #805a00;outline-offset:2px}
