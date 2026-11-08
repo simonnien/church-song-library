@@ -88,3 +88,5 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .admin-modal .editor-accounts{list-style:none;padding:0;margin:12px 0;width:100%}
 .admin-modal .editor-accounts>.pastor-account{box-sizing:border-box;width:100%;margin:0 0 12px}
+
+.background-recommendations{border:2px solid #b99a4c;border-radius:12px;padding:12px;margin:12px 0;background:#fff9e9}.background-recommendations>small{display:block;margin:4px 0 10px}.background-sorting{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.background-sorting label{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}.background-sorting select{max-width:100%;padding:9px;border:1px solid #b3c5b8;border-radius:8px;background:white;color:#254f43}
