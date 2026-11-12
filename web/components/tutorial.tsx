@@ -1,8 +1,11 @@
  'use client';
+import TutorialPractice from './tutorial-practice';
 import {useEffect,useRef,useState} from 'react';
 export default function Tutorial({canEdit,isAdmin,username,ready}:{canEdit:boolean;isAdmin:boolean;username:string;ready:boolean}){
+ const [done,setDone]=useState(false);
  const [open,setOpen]=useState(false),[step,setStep]=useState(0);const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{if(!ready||!username)return;let active=true;fetch('/api/tutorial').then(r=>r.ok?r.json():null).then(d=>{if(active&&d&&!d.seen){setStep(0);setOpen(true)}}).catch(()=>{});return()=>{active=false}},[ready,username]);
+ useEffect(()=>{setDone(false)},[step]);
+ useEffect(()=>{if(!ready||!username)return;let active=true;fetch('/api/tutorial').then(r=>r.ok?r.json():null).then(d=>{if(active&&d&&!d.seen){setStep(0);setDone(false);setOpen(true)}}).catch(()=>{});return()=>{active=false}},[ready,username]);
  useEffect(()=>{if(open&&!dialog.current?.open)dialog.current?.showModal();if(!open&&dialog.current?.open)dialog.current.close()},[open]);
  function close(){setOpen(false);if(username)void fetch('/api/tutorial',{method:'POST'}).catch(()=>{})}
  const steps=[
@@ -16,5 +19,5 @@ export default function Tutorial({canEdit,isAdmin,username,ready}:{canEdit:boole
  ...(isAdmin?[{title:'管理員操作',text:['「管理」可新增或停用帳號、指定管理員，編輯姓名及複選小組／身分標籤。','小組標籤可集中新增、改名與刪除；改名會套用到使用它的帳號。','歌曲編號可由管理員修改；遇到已存在的編號先查看衝突歌曲，再使用編號交換功能。修改前先儲存目前歌詞。']}]:[])
  ];
  const index=Math.min(step,steps.length-1),current=steps[index];
- return <><button type="button" className="tutorial-button" onClick={()=>{setStep(0);setOpen(true)}}>使用教學</button><dialog ref={dialog} className="tutorial-dialog" onCancel={e=>{e.preventDefault();close()}} aria-labelledby="tutorial-title"><header><span>{canEdit?'編輯者':'瀏覽與匯出'}教學 · {index+1} / {steps.length}</span><button type="button" aria-label="關閉教學" onClick={close}>×</button></header><h2 id="tutorial-title">{current.title}</h2><ol>{current.text.map(t=><li key={t}>{t}</li>)}</ol><nav aria-label="教學步驟">{steps.map((s,i)=><button key={s.title} aria-label={s.title} aria-current={i===index?'step':undefined} onClick={()=>setStep(i)}>{i+1}</button>)}</nav><footer><button disabled={index===0} onClick={()=>setStep(index-1)}>上一步</button><button className="primary" onClick={()=>index===steps.length-1?close():setStep(index+1)}>{index===steps.length-1?'完成教學':'下一步'}</button></footer></dialog></>;
+ return <><button type="button" className="tutorial-button" onClick={()=>{setStep(0);setDone(false);setOpen(true)}}>使用教學</button><dialog ref={dialog} className="tutorial-dialog" onCancel={e=>{e.preventDefault();close()}} aria-labelledby="tutorial-title"><header><span>{canEdit?'編輯者':'瀏覽與匯出'}教學 · {index+1} / {steps.length}</span><button type="button" aria-label="關閉教學" onClick={close}>×</button></header><h2 id="tutorial-title">{current.title}</h2><TutorialPractice key={`${index}-${open}`} title={current.title} onDone={()=>setDone(true)}/><details><summary>查看這一步的詳細說明</summary><ol>{current.text.map(t=><li key={t}>{t}</li>)}</ol></details><nav aria-label="教學步驟">{steps.map((s,i)=><button key={s.title} aria-label={s.title} aria-current={i===index?'step':undefined} onClick={()=>setStep(i)}>{i+1}</button>)}</nav><footer><button disabled={index===0} onClick={()=>setStep(index-1)}>上一步</button><button onClick={()=>index===steps.length-1?close():setStep(index+1)}>跳過這一步</button><button disabled={!done} className="primary" onClick={()=>index===steps.length-1?close():setStep(index+1)}>{index===steps.length-1?'完成教學':'下一步'}</button></footer></dialog></>;
 }
