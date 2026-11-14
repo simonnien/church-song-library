@@ -1,0 +1,14 @@
+const fs=require('fs'),vm=require('vm'),ts=require('typescript'),assert=require('node:assert/strict');
+const storage=new Map([['song-library-recent-export-backgrounds','["legacy"]']]),requests=[];const m={exports:{}};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/background-usage.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module:m,exports:m.exports,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},crypto:{randomUUID:()=> 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'},fetch:async(url,opts)=>{requests.push(JSON.parse(opts.body));return {ok:true}},window:{dispatchEvent(){}},Event:class{}});
+const {recordBackgroundExport:record,recentBackgrounds:recent}=m.exports;
+const list=id=>Array.from(recent(id));
+assert.deepEqual(list('1'),[]);assert.deepEqual(list(),[]);
+record([{songId:'1',backgroundId:'blue'},{songId:'2',backgroundId:'gold'},{songId:'3',backgroundId:'blue'}]);
+assert.deepEqual(list('1'),['blue']);assert.deepEqual(list('2'),['gold']);assert.deepEqual(list('3'),['blue']);
+assert.deepEqual(requests[0].ids,['blue','gold']);
+record([{songId:'1',backgroundId:'green'}]);record([{songId:'1',backgroundId:'blue'}]);
+assert.deepEqual(list('1'),['blue','green']);assert.deepEqual(list('2'),['gold']);assert.deepEqual(list('new'),[]);
+record([{songId:'1',backgroundId:''}]);assert.deepEqual(list('1'),['blue','green']);
+storage.set(m.exports.RECENT_BACKGROUNDS+':bad','{}');assert.deepEqual(list('bad'),[]);
+console.log('PASS: per-song history, playlist mappings, recency dedupe, no legacy/global fallback, black background and corrupt storage');
