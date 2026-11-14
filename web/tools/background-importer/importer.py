@@ -1,5 +1,6 @@
 """Local background importer. No AI or Google credentials required."""
 import hashlib,json,os,pathlib,re,shutil,subprocess,threading,urllib.request,urllib.parse,uuid,webbrowser
+from naming import unique_name,suggest
 import tkinter as tk
 from tkinter import ttk,filedialog,messagebox
 WEB=pathlib.Path(__file__).resolve().parents[2]
@@ -90,11 +91,13 @@ def merge_catalog(old,items,ids):
 class App:
  def __init__(self,root):
   self.root=root;self.job=None;self.data=None;self.links=[];self.busy=False
-  root.title('背景影片匯入工具（不使用 AI）');root.geometry('800x760')
+  root.title('背景影片匯入工具（可選本機 AI）');root.geometry('800x760')
   frame=ttk.Frame(root,padding=18);frame.pack(fill='both',expand=True)
   ttk.Label(frame,text='① 選影片 → ② 轉檔預覽 → ③ 上傳 Drive → ④ 驗證與發布',font=('Microsoft JhengHei',13,'bold')).pack(anchor='w',pady=8)
   self.source=tk.StringVar();ttk.Button(frame,text='選擇 MP4／影片',command=self.choose).pack(anchor='w');ttk.Entry(frame,textvariable=self.source).pack(fill='x',pady=4)
   ttk.Label(frame,text='影片名稱（請避免與現有影片同名）').pack(anchor='w');self.name=tk.StringVar();ttk.Entry(frame,textvariable=self.name).pack(fill='x')
+  ttk.Button(frame,text='本機 AI 建議名稱（選用）',command=self.ai_names).pack(anchor='w',pady=4)
+  self.suggestions=ttk.Frame(frame);self.suggestions.pack(fill='x')
   self.ratio=tk.StringVar(value='兩種');ttk.Combobox(frame,textvariable=self.ratio,values=['兩種','16:9','32:9'],state='readonly').pack(anchor='w',pady=6)
   self.blend=tk.BooleanVar(value=True);ttk.Checkbutton(frame,text='尾接頭淡化 0.8 秒（不能保證自然無縫；請預覽，可能有疊影）',variable=self.blend).pack(anchor='w')
   ttk.Label(frame,text='規格：H.264／30fps／無聲；16:9=1920×1080，32:9=3840×1080。居中裁切，不拉伸。').pack(anchor='w')
@@ -121,8 +124,19 @@ class App:
   if self.busy:return
   value=filedialog.askopenfilename(filetypes=[('影片','*.mp4 *.mov *.mkv *.webm'),('所有檔案','*.*')])
   if value:self.source.set(value);self.name.set(pathlib.Path(value).stem)
+ def ai_names(self):
+  source=self.source.get()
+  if not pathlib.Path(source).is_file():messagebox.showinfo('請選影片','先選擇影片再建議名稱');return
+  def work():
+   names=suggest(source,ffmpeg(),[v['name'] for v in json.loads(CAT.read_text('utf-8'))],self.log)
+   def display():
+    for w in self.suggestions.winfo_children():w.destroy()
+    for name in names:ttk.Button(self.suggestions,text='採用：'+name,command=lambda n=name:self.name.set(n)).pack(side='left',padx=3)
+    self.log('建議已自動避開清單中的同名影片。點選一個名稱，或自行修改。')
+   self.root.after(0,display)
+  self.task(work)
  def prepare(self):
-  source=self.source.get();name=self.name.get();ratio=self.ratio.get();blend=self.blend.get()
+  source=self.source.get();name=unique_name(self.name.get(),[v['name'] for v in json.loads(CAT.read_text('utf-8'))]);self.name.set(name);ratio=self.ratio.get();blend=self.blend.get()
   if not pathlib.Path(source).is_file():messagebox.showerror('請選影片','找不到來源影片');return
   def work():
    self.job,self.data=convert(source,name,['16:9','32:9'] if ratio=='兩種' else [ratio],blend,self.log)
